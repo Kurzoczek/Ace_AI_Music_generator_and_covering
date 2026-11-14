@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_generate">Generuj</string>
+    <string name="tab_settings">Ustawienia</string>
+    <string name="tab_models">Modele</string>
+    <string name="tab_log">Log</string>
+
+    <string name="tracks_title">Twoje utwory</string>
+    <string name="pick_tracks">Dodaj utwory</string>
+    <string name="templates_title">Wzorce stylu (opcjonalnie)</string>
+    <string name="pick_templates">Dodaj wzorce</string>
+    <string name="clear">Wyczyść</string>
+    <string name="tracks_none">Nie wybrano utworów. W trybie tekstowym utwór daje tylko tempo, tonację i akordy.</string>
+    <string name="templates_none">Brak wzorców - jako referencja posłuży brzmienie Twojego utworu.</string>
+    <string name="mode_cover">Cover (przeróbka mojego utworu)</string>
+    <string name="mode_text">Tekst (nowy utwór)</string>
+    <string name="prompt_label">Opis muzyki (po angielsku)</string>
+    <string name="prompt_hint">np. euphoric hardstyle, distorted kick, supersaw leads</string>
+    <string name="start">Start</string>
+    <string name="checking">Sprawdzam pobieranie, pamięć telefonu i RAM…</string>
+    <string name="pause">Wstrzymaj</string>
+    <string name="resume">Wznów</string>
+    <string name="stop">Zatrzymaj</string>
+    <string name="paused_user">Wstrzymane przez Ciebie - silnik jest zamrożony, nic nie przepada.</string>
+    <string name="paused_thermal">Wstrzymane: telefon jest za gorący. Generowanie wznowi się samo, gdy ostygnie.</string>
+    <string name="results_title">Zapisano</string>
+    <string name="error_title">Błąd</string>
+    <string name="need_track">Najpierw dodaj co najmniej jeden utwór.</string>
+    <string name="notif_permission">Zezwól na powiadomienia, aby widzieć postęp i wiedzieć, kiedy utwór jest gotowy.</string>
+
+    <string name="pf_title">Zanim zaczniesz</string>
+    <string name="pf_download_title">Pobieranie danych</string>
+    <string name="pf_download_none">Wszystkie modele dla tych ustawień są już w telefonie - nic nie zostanie pobrane.</string>
+    <string name="pf_download_body">Aplikacja pobierze %1$s (%2$d plik(i)) z %3$s przez HTTPS (serwer: %4$s oraz serwery pobierania Hugging Face, na które przekierowuje).</string>
+    <string name="pf_sizes_exact">Rozmiary odczytane przed chwilą z serwera; każdy plik jest sprawdzany sumą kontrolną SHA-256.</string>
+    <string name="pf_sizes_approx">Nie udało się połączyć z serwerem - rozmiary są przybliżone.</string>
+    <string name="pf_metered">Korzystasz z danych komórkowych (sieć taryfowa). To pobieranie może zużyć dużą część pakietu danych.</string>
+    <string name="pf_wifi_blocked">Włączone jest „Pobieraj tylko przez Wi-Fi”, a telefon nie jest w sieci Wi-Fi - połącz się z Wi-Fi albo zmień ustawienie.</string>
+    <string name="pf_storage_title">Pamięć telefonu</string>
+    <string name="pf_storage_body">Modele dla tych ustawień zajmą po pobraniu %1$s pamięci telefonu. Wyniki i pliki tymczasowe: ok. %2$s. Wolne teraz: %3$s.</string>
+    <string name="pf_storage_low">Za mało wolnego miejsca - najpierw zwolnij pamięć telefonu.</string>
+    <string name="pf_ram_title">Pamięć RAM</string>
+    <string name="pf_ram_body">Model %1$s potrzebuje w szczycie ok. %2$.1f GB RAM (wagi %3$.1f GB + pamięć robocza na %4$.0f s muzyki). Telefon: %5$.1f GB RAM, wolne teraz %6$.1f GB. Twój limit: %7$.1f GB.</string>
+    <string name="pf_ram_lm">Krok modelu językowego potrzebuje ok. %1$.1f GB (działa przed modelem muzycznym, nie równocześnie).</string>
+    <string name="pf_ram_estimated">Szacunek - stanie się dokładny po pierwszym uruchomieniu na tym telefonie.</string>
+    <string name="pf_ram_calibrated">Zmierzone na tym telefonie podczas wcześniejszych uruchomień.</string>
+    <string name="pf_ram_fits">Mieści się w limicie - cały utwór zostanie policzony jednym przebiegiem.</string>
+    <string name="pf_ram_split">Aby zmieścić się w limicie, aplikacja będzie liczyć przebiegami po najwyżej %1$.0f s na %2$d wątk(ach). Potrwa to dłużej, ale nie przerwie się z braku pamięci.</string>
+    <string name="pf_ram_no_lm">Model językowy zostanie wyłączony (nie mieści się w limicie).</string>
+    <string name="pf_ram_below">Twój limit jest mniejszy niż same wagi modelu. Aplikacja i tak ruszy: najkrótsze przebiegi, najwyżej 2 wątki, a gdy Android zatrzyma silnik z braku pamięci, aplikacja poczeka na wolną pamięć i wznowi od ostatniego ukończonego przebiegu. Będzie znacznie wolniej; zalecana mniejsza kwantyzacja (np. Q4_K_M).</string>
+    <string name="pf_heat_title">Temperatura i bateria</string>
+    <string name="pf_heat_body">Generowanie muzyki długo (od minut do godzin) obciąża procesor w pełni. Telefon może się mocno nagrzać, a bateria szybko się rozładuje - podłącz ładowarkę, nie trzymaj telefonu na słońcu ani w etui. Ochrona przed przegrzaniem: %1$s.</string>
+    <string name="pf_heat_on">włączona - aplikacja wstrzyma pracę, gdy telefon za bardzo się nagrzeje</string>
+    <string name="pf_heat_off">WYŁĄCZONA (Ustawienia → Procesor)</string>
+    <string name="pf_heat_now">Telefon jest już ciepły (status termiczny %1$d) - rozważ odczekanie.</string>
+    <string name="pf_confirm">Rozumiem: rozmiar pobierania, zajętość pamięci telefonu i RAM oraz ryzyko przegrzania</string>
+    <string name="pf_go">Pobierz i uruchom</string>
+    <string name="pf_go_no_download">Uruchom</string>
+    <string name="cancel">Anuluj</string>
+
+    <string name="set_model">Model</string>
+    <string name="set_dit">Model muzyczny</string>
+    <string name="set_quant">Kwantyzacja (mniejsza = mniej RAM)</string>
+    <string name="set_lm">Model językowy (tryb tekstowy)</string>
+    <string name="set_lm_none">Brak</string>
+    <string name="set_generation">Generowanie</string>
+    <string name="set_steps">Kroki dyfuzji (puste = domyślne modelu)</string>
+    <string name="set_seed">Ziarno (-1 = losowe)</string>
+    <string name="set_guidance">Guidance (puste = domyślne modelu)</string>
+    <string name="set_sections">Liczba sekcji (tryb tekstowy)</string>
+    <string name="set_whole">Cały utwór jednym przebiegiem</string>
+    <string name="set_passes">Liczba przejść (0 = tyle, ile sekcji)</string>
+    <string name="set_instrumental">Instrumentalny (bez wokalu)</string>
+    <string name="set_lyrics">Tekst piosenki ([Verse], [Chorus]…)</string>
+    <string name="set_cover">Cover</string>
+    <string name="set_strength">Siła oryginału: %1$.2f</string>
+    <string name="set_noise">Szum na starcie: %1$.2f</string>
+    <string name="set_whole_file">Przerób cały plik</string>
+    <string name="set_fragments">Fragmenty, np. 0:30-1:15; 2:00-2:45</string>
+    <string name="set_fragments_mode">Fragmenty</string>
+    <string name="set_frag_insert">Wstaw w oryginał</string>
+    <string name="set_frag_separate">Tylko przerobione fragmenty</string>
+    <string name="set_max_sec">Limit długości w sekundach (puste = cały utwór)</string>
+    <string name="set_reference">Audio referencyjne (styl z Twojego utworu)</string>
+    <string name="set_reference_previous">Referencja = koniec poprzedniej sekcji</string>
+    <string name="set_export">Wyniki</string>
+    <string name="set_mono">Mono</string>
+    <string name="set_stereo">Stereo</string>
+    <string name="set_surround">Surround 5.1 (pseudo)</string>
+    <string name="set_notation">Nuty (MusicXML, LilyPond, tekst)</string>
+    <string name="set_samples">Pętle i sample pasmowe</string>
+    <string name="set_used">Użyte wycinki wejścia</string>
+    <string name="set_stems">Analiza stemów (wolniej, dokładniejsze nuty/MIDI)</string>
+    <string name="set_stems_export">Zapisz stemy</string>
+    <string name="set_memory">Pamięć RAM</string>
+    <string name="set_ram_auto">Automatycznie: RAM telefonu minus rezerwa dla Androida (%1$.1f GB)</string>
+    <string name="set_ram_limit">Limit RAM dla generowania: %1$.1f GB (telefon: %2$.1f GB)</string>
+    <string name="set_ram_info">Potrzeba ok. %1$.1f GB w szczycie. %2$s</string>
+    <string name="set_ram_ok">Mieści się.</string>
+    <string name="set_ram_adapt">Poniżej potrzeb - aplikacja użyje krótszych przebiegów i mniej wątków zamiast przerywać.</string>
+    <string name="set_cpu">Procesor</string>
+    <string name="set_threads">Wątki: %1$s (telefon: %2$d rdzeni)</string>
+    <string name="set_threads_auto">automatycznie</string>
+    <string name="set_cpu_pct">Maksymalne użycie procesora: %1$d %%</string>
+    <string name="set_cores">Rdzenie</string>
+    <string name="set_cores_all">Wszystkie</string>
+    <string name="set_cores_eff">Tylko energooszczędne (chłodniej, wolniej)</string>
+    <string name="set_cores_perf">Tylko wydajne</string>
+    <string name="set_low_priority">Niski priorytet (telefon pozostaje płynny)</string>
+    <string name="set_thermal">Ochrona przed przegrzaniem (pauza, gdy gorąco)</string>
+    <string name="set_thermal_level">Wstrzymaj przy</string>
+    <string name="set_thermal_moderate">Umiarkowanym nagrzaniu</string>
+    <string name="set_thermal_severe">Silnym nagrzaniu</string>
+    <string name="set_thermal_critical">Krytycznym nagrzaniu</string>
+    <string name="set_network">Sieć</string>
+    <string name="set_wifi_only">Pobieraj modele tylko przez Wi-Fi</string>
+
+    <string name="models_required">Potrzebne dla obecnych ustawień</string>
+    <string name="models_on_phone">W telefonie</string>
+    <string name="models_used_space">Modele zajmują %1$s · wolne %2$s</string>
+    <string name="models_source">Źródło: %1$s</string>
+    <string name="model_ok">pobrany</string>
+    <string name="model_missing">zostanie pobrany</string>
+    <string name="delete">Usuń</string>
+    <string name="refresh_sizes">Odczytaj dokładne rozmiary z serwera</string>
+
+    <string name="channel_progress">Postęp</string>
+    <string name="channel_done">Zakończenie i ostrzeżenia</string>
+    <string name="status_preparing">Przygotowanie…</string>
+    <string name="status_decoding">Dekoduję utwór %1$d/%2$d: %3$s</string>
+    <string name="status_downloading">Pobieram %1$s: %2$d / %3$d MB</string>
+    <string name="status_generating">Generuję…</string>
+    <string name="status_saving">Zapisuję do Muzyki i Pobranych…</string>
+    <string name="status_done">Gotowe</string>
+    <string name="status_stopping">Zatrzymuję…</string>
+    <string name="status_cancelled">Anulowano</string>
+    <string name="status_cancelled_kept">Zatrzymano. Ukończone przebiegi są zachowane - naciśnij Start, aby kontynuować.</string>
+    <string name="status_timeout">Android zakończył długie zadanie. Postęp jest zachowany - naciśnij Start, aby kontynuować.</string>
+    <string name="error_download_grew">Potrzebne pobieranie jest teraz większe niż potwierdzone - uruchom ponownie, aby zobaczyć nowy rozmiar.</string>
+    <string name="error_offline">Brak internetu - nie można pobrać modeli.</string>
+    <string name="error_wifi_only">Brak Wi-Fi, a włączone jest „tylko przez Wi-Fi”.</string>
+    <string name="notif_done">Utwór gotowy (Muzyka/ACE_music_gen).</string>
+    <string name="notif_failed">Generowanie nie powiodło się: %1$s</string>
+    <string name="notif_thermal">Wstrzymano - telefon jest za gorący. Praca wznowi się po ostygnięciu.</string>
+    <string name="notif_paused">Wstrzymano</string>
+    <string name="action_stop">Zatrzymaj</string>
+    <string name="action_pause">Wstrzymaj</string>
+    <string name="action_resume">Wznów</string>
+    <string name="note_over_limit">Model zużył %1$d MB, więcej niż Twój limit %2$d MB - Android pokrył różnicę pamięcią skompresowaną i praca trwała dalej.</string>
+    <string name="note_low_memory">Brak pamięci w kroku \'%1$s\' (próba %2$d) - kontynuuję z mniejszą liczbą wątków, krótszymi przebiegami i bez modelu językowego.</string>
+
+    <string name="out_title">Miejsca zapisu</string>
+    <string name="out_info">Domyślnie audio trafia do Music/ACE_music_gen (Muzyka), a MIDI, nuty i metadane do Download/ACE_music_gen (Pobrane), w osobnym folderze dla każdego utworu (bez żadnych uprawnień). Dla każdego rodzaju plików możesz wybrać własny folder - aplikacja zapisze wtedy do &lt;folder&gt;/&lt;utwór&gt;/. Jeśli wybrany folder przestanie być dostępny, pliki trafią do lokalizacji domyślnej, a log to odnotuje.</string>
+    <string name="out_session">&lt;utwór&gt;</string>
+    <string name="out_default">Domyślnie: %1$s</string>
+    <string name="out_custom">Twój folder: %1$s</string>
+    <string name="out_no_access">Brak dostępu do tego folderu - zostanie użyta lokalizacja domyślna. Wybierz go ponownie.</string>
+    <string name="out_change">Zmień</string>
+    <string name="out_reset">Domyślne</string>
+    <string name="out_all">Jeden folder na wszystko</string>
+    <string name="out_all_reset">Wszystko domyślnie</string>
+    <string name="out_cat_final">Gotowy utwór</string>
+    <string name="out_cat_parts">Sekcje (części)</string>
+    <string name="out_cat_samples">Pętle i sample</string>
+    <string name="out_cat_stems">Stemy</string>
+    <string name="out_cat_used_sounds">Użyte wycinki wejścia</string>
+    <string name="out_cat_midi">MIDI</string>
+    <string name="out_cat_notation">Nuty (MusicXML, LilyPond, tekst)</string>
+    <string name="out_cat_metadata">Metadane (metadata.json)</string>
+    <string name="out_where_default">Wyniki: audio → Music/ACE_music_gen (Muzyka), MIDI i nuty → Download/ACE_music_gen (Pobrane). Zmień w Ustawienia → Miejsca zapisu.</string>
+    <string name="out_where_custom">Wyniki: Twoje foldery dla %1$d rodzaj(ów) plików, reszta w lokalizacjach domyślnych (Ustawienia → Miejsca zapisu).</string>
+    <string name="out_fallback">Brak dostępu do wybranego folderu dla: %1$s - zapisano w lokalizacji domyślnej.</string>
+</resources>

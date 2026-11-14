@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+: back up only the settings; models (several GB), checkpoints and temporary files are never backed up. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="sharedpref" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="external" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="external" path="." />
+    </device-transfer>
+</data-extraction-rules>

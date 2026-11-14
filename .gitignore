@@ -1,0 +1,22 @@
+# Gradle / Android Studio
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.cxx/
+app/.cxx/
+captures/
+.externalNativeBuild/
+
+# Python
+__pycache__/
+*.pyc
+
+# Never commit signing keys, built packages or models (models are downloaded by the app at runtime)
+*.jks
+*.keystore
+keystore.properties
+*.apk
+*.aab
+*.gguf

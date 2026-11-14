@@ -1,0 +1,10 @@
+# Normalize line endings (the project is edited on Windows, built on Linux CI)
+* text=auto
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.jar binary
+*.png binary
+*.gguf binary
+*.wav binary

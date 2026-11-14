@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 10-11: back up only the settings. -->
+<full-backup-content>
+    <include domain="sharedpref" path="." />
+    <exclude domain="file" path="." />
+    <exclude domain="external" path="." />
+</full-backup-content>

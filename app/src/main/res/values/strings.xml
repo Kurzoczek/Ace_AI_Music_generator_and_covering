@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">AI Music Generator and Cover Maker</string>
+
+    <!-- tabs -->
+    <string name="tab_generate">Generate</string>
+    <string name="tab_settings">Settings</string>
+    <string name="tab_models">Models</string>
+    <string name="tab_log">Log</string>
+
+    <!-- generate screen -->
+    <string name="tracks_title">Your tracks</string>
+    <string name="pick_tracks">Add tracks</string>
+    <string name="templates_title">Style templates (optional)</string>
+    <string name="pick_templates">Add templates</string>
+    <string name="clear">Clear</string>
+    <string name="tracks_none">No tracks selected. In text mode a track only provides tempo, key and chords.</string>
+    <string name="templates_none">No templates - the sound of your own track is used as the reference.</string>
+    <string name="mode_cover">Cover (remake my track)</string>
+    <string name="mode_text">Text (new track)</string>
+    <string name="prompt_label">Music description (English)</string>
+    <string name="prompt_hint">e.g. euphoric hardstyle, distorted kick, supersaw leads</string>
+    <string name="start">Start</string>
+    <string name="checking">Checking downloads, storage and memory…</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
+    <string name="stop">Stop</string>
+    <string name="paused_user">Paused by you - the engine is frozen, nothing is lost.</string>
+    <string name="paused_thermal">Paused: the phone is too hot. Generation continues automatically after it cools down.</string>
+    <string name="results_title">Saved</string>
+    <string name="error_title">Error</string>
+    <string name="need_track">Add at least one track first.</string>
+    <string name="notif_permission">Allow notifications to see progress and when the track is ready.</string>
+    <string name="duration_fmt" translatable="false">%1$s · %2$d:%3$02d</string>
+
+    <!-- warning dialog before processing -->
+    <string name="pf_title">Before you start</string>
+    <string name="pf_download_title">Data download</string>
+    <string name="pf_download_none">All models for this configuration are already on the phone - nothing will be downloaded.</string>
+    <string name="pf_download_body">The app will download %1$s (%2$d file(s)) from %3$s over HTTPS (server: %4$s and the Hugging Face download servers it redirects to).</string>
+    <string name="pf_download_item" translatable="false">• %1$s - %2$s</string>
+    <string name="pf_sizes_exact">Sizes read from the server just now; every file is verified with its SHA-256 checksum.</string>
+    <string name="pf_sizes_approx">The server could not be reached - sizes are approximate.</string>
+    <string name="pf_metered">You are on mobile data (metered network). This download may use a large part of your data plan.</string>
+    <string name="pf_wifi_blocked">\"Download over Wi-Fi only\" is on and the phone is not on Wi-Fi - connect to Wi-Fi or change the setting.</string>
+    <string name="pf_storage_title">Phone storage</string>
+    <string name="pf_storage_body">The models of this configuration take %1$s in the phone storage after download. Results and temporary files: about %2$s. Free now: %3$s.</string>
+    <string name="pf_storage_low">Not enough free storage - free some space first.</string>
+    <string name="pf_ram_title">Memory (RAM)</string>
+    <string name="pf_ram_body">Model %1$s needs about %2$.1f GB of RAM at peak (weights %3$.1f GB + work memory for %4$.0f s of audio). Phone: %5$.1f GB RAM, %6$.1f GB free now. Your limit: %7$.1f GB.</string>
+    <string name="pf_ram_lm">The language model step needs about %1$.1f GB (runs before the music model, not at the same time).</string>
+    <string name="pf_ram_estimated">Estimate - it becomes exact after the first run on this phone.</string>
+    <string name="pf_ram_calibrated">Measured on this phone during earlier runs.</string>
+    <string name="pf_ram_fits">Fits in your limit - the whole track is computed in one pass.</string>
+    <string name="pf_ram_split">To stay within your limit, the app will work in passes of at most %1$.0f s and use %2$d thread(s). It takes longer, but will not stop because of memory.</string>
+    <string name="pf_ram_no_lm">The language model is switched off (it does not fit in the limit).</string>
+    <string name="pf_ram_below">Your limit is lower than the model weights alone. The app will still run: shortest passes, at most 2 threads, and if Android stops the engine for lack of memory, the app waits for free memory and continues from the last finished pass. Expect it to be much slower; a smaller quantization (e.g. Q4_K_M) is recommended.</string>
+    <string name="pf_heat_title">Heat and battery</string>
+    <string name="pf_heat_body">Generating music uses the processor at full load for a long time (minutes to hours). The phone may get hot and the battery will drain quickly - keep it charging, out of direct sun and without a case. Overheating protection: %1$s.</string>
+    <string name="pf_heat_on">on - the app pauses when the phone gets too hot</string>
+    <string name="pf_heat_off">OFF (Settings → Processor)</string>
+    <string name="pf_heat_now">The phone is already warm (thermal status %1$d) - consider waiting.</string>
+    <string name="pf_confirm">I understand the download size, storage and memory use and the risk of overheating</string>
+    <string name="pf_go">Download and start</string>
+    <string name="pf_go_no_download">Start</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- settings -->
+    <string name="set_model">Model</string>
+    <string name="set_dit">Music model</string>
+    <string name="set_quant">Quantization (smaller = less RAM)</string>
+    <string name="set_lm">Language model (text mode)</string>
+    <string name="set_lm_none">None</string>
+    <string name="set_generation">Generation</string>
+    <string name="set_steps">Diffusion steps (empty = model default)</string>
+    <string name="set_seed">Seed (-1 = random)</string>
+    <string name="set_guidance">Guidance (empty = model default)</string>
+    <string name="set_sections">Number of sections (text mode)</string>
+    <string name="set_whole">Whole track in one pass</string>
+    <string name="set_passes">Number of passes (0 = as many as sections)</string>
+    <string name="set_instrumental">Instrumental (no vocals)</string>
+    <string name="set_lyrics">Lyrics ([Verse], [Chorus]…)</string>
+    <string name="set_cover">Cover</string>
+    <string name="set_strength">Original strength: %1$.2f</string>
+    <string name="set_noise">Noise at start: %1$.2f</string>
+    <string name="set_whole_file">Remake the whole file</string>
+    <string name="set_fragments">Fragments, e.g. 0:30-1:15; 2:00-2:45</string>
+    <string name="set_fragments_mode">Fragments</string>
+    <string name="set_frag_insert">Insert into the original</string>
+    <string name="set_frag_separate">Only the remade fragments</string>
+    <string name="set_max_sec">Length limit in seconds (empty = whole track)</string>
+    <string name="set_reference">Reference audio (style from your track)</string>
+    <string name="set_reference_previous">Reference = end of the previous section</string>
+    <string name="set_export">Results</string>
+    <string name="set_mono">Mono</string>
+    <string name="set_stereo">Stereo</string>
+    <string name="set_surround">Surround 5.1 (pseudo)</string>
+    <string name="set_notation">Notation (MusicXML, LilyPond, text)</string>
+    <string name="set_samples">Loops and band samples</string>
+    <string name="set_used">Used input slices</string>
+    <string name="set_stems">Stem analysis (slower, more accurate notes/MIDI)</string>
+    <string name="set_stems_export">Save stems</string>
+    <string name="set_memory">Memory (RAM)</string>
+    <string name="set_ram_auto">Automatic: phone RAM minus a reserve for Android (%1$.1f GB)</string>
+    <string name="set_ram_limit">RAM limit for generation: %1$.1f GB (phone: %2$.1f GB)</string>
+    <string name="set_ram_info">Needs about %1$.1f GB at peak. %2$s</string>
+    <string name="set_ram_ok">Fits.</string>
+    <string name="set_ram_adapt">Below the need - the app will use shorter passes and fewer threads instead of stopping.</string>
+    <string name="set_cpu">Processor</string>
+    <string name="set_threads">Threads: %1$s (phone: %2$d cores)</string>
+    <string name="set_threads_auto">automatic</string>
+    <string name="set_cpu_pct">Max processor use: %1$d %%</string>
+    <string name="set_cores">Cores</string>
+    <string name="set_cores_all">All</string>
+    <string name="set_cores_eff">Efficiency only (cooler, slower)</string>
+    <string name="set_cores_perf">Performance only</string>
+    <string name="set_low_priority">Low priority (phone stays responsive)</string>
+    <string name="set_thermal">Overheating protection (pause when hot)</string>
+    <string name="set_thermal_level">Pause at</string>
+    <string name="set_thermal_moderate">Moderate heat</string>
+    <string name="set_thermal_severe">Severe heat</string>
+    <string name="set_thermal_critical">Critical heat</string>
+    <string name="set_network">Network</string>
+    <string name="set_wifi_only">Download models over Wi-Fi only</string>
+
+    <!-- models screen -->
+    <string name="models_required">Needed for the current settings</string>
+    <string name="models_on_phone">On the phone</string>
+    <string name="models_used_space">Models use %1$s · free %2$s</string>
+    <string name="models_source">Source: %1$s</string>
+    <string name="model_ok">downloaded</string>
+    <string name="model_missing">will be downloaded</string>
+    <string name="delete">Delete</string>
+    <string name="refresh_sizes">Read exact sizes from the server</string>
+
+    <!-- service / notifications -->
+    <string name="channel_progress">Progress</string>
+    <string name="channel_done">Finished and warnings</string>
+    <string name="status_preparing">Preparing…</string>
+    <string name="status_decoding">Decoding track %1$d/%2$d: %3$s</string>
+    <string name="status_downloading">Downloading %1$s: %2$d / %3$d MB</string>
+    <string name="status_generating">Generating…</string>
+    <string name="status_saving">Saving to Music and Download…</string>
+    <string name="status_done">Done</string>
+    <string name="status_stopping">Stopping…</string>
+    <string name="status_cancelled">Cancelled</string>
+    <string name="status_cancelled_kept">Stopped. Finished passes are kept - press Start again to continue.</string>
+    <string name="status_timeout">Android ended the long-running task. Progress is kept - press Start again to continue.</string>
+    <string name="error_download_grew">The download needed now is larger than what you confirmed - start again to see the new size.</string>
+    <string name="error_offline">No internet connection - the models cannot be downloaded.</string>
+    <string name="error_wifi_only">Not on Wi-Fi and \"Wi-Fi only\" is on.</string>
+    <string name="notif_done">Your track is ready (Music/ACE_music_gen).</string>
+    <string name="notif_failed">Generation failed: %1$s</string>
+    <string name="notif_thermal">Paused - the phone is too hot. It will continue after cooling down.</string>
+    <string name="notif_paused">Paused</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="note_over_limit">The model used %1$d MB, more than your limit of %2$d MB - Android covered it with compressed memory and the run continued.</string>
+    <string name="note_low_memory">Out of memory in step \'%1$s\' (attempt %2$d) - continuing with fewer threads, shorter passes and without the language model.</string>
+
+    <!-- save locations -->
+    <string name="out_title">Save locations</string>
+    <string name="out_info">By default audio goes to Music/ACE_music_gen and MIDI, notation and metadata to Download/ACE_music_gen, in a folder per track (no permission needed). You can pick your own folder for every kind of file - the app then saves into &lt;folder&gt;/&lt;track&gt;/. If a picked folder becomes unavailable, the default is used and the log says so.</string>
+    <string name="out_session">&lt;track&gt;</string>
+    <string name="out_default">Default: %1$s</string>
+    <string name="out_custom">Your folder: %1$s</string>
+    <string name="out_no_access">No access to this folder any more - the default location will be used. Pick it again.</string>
+    <string name="out_change">Change</string>
+    <string name="out_reset">Default</string>
+    <string name="out_all">One folder for everything</string>
+    <string name="out_all_reset">All defaults</string>
+    <string name="out_cat_final">Final track</string>
+    <string name="out_cat_parts">Sections (parts)</string>
+    <string name="out_cat_samples">Loops and samples</string>
+    <string name="out_cat_stems">Stems</string>
+    <string name="out_cat_used_sounds">Used input slices</string>
+    <string name="out_cat_midi">MIDI</string>
+    <string name="out_cat_notation">Notation (MusicXML, LilyPond, text)</string>
+    <string name="out_cat_metadata">Metadata (metadata.json)</string>
+    <string name="out_where_default">Results: audio → Music/ACE_music_gen, MIDI and notation → Download/ACE_music_gen. Change in Settings → Save locations.</string>
+    <string name="out_where_custom">Results: your folders for %1$d kind(s) of files, the rest in the default locations (Settings → Save locations).</string>
+    <string name="out_fallback">No access to the picked folder for: %1$s - saved in the default location instead.</string>
+</resources>
