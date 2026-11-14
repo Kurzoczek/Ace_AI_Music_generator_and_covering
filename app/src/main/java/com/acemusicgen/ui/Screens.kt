@@ -20,7 +20,9 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -54,8 +56,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.acemusicgen.R
+import com.acemusicgen.data.AppLanguage
 import com.acemusicgen.data.AppSettings
 import com.acemusicgen.data.CoreSet
+import com.acemusicgen.data.Priority
+import com.acemusicgen.data.ModelFiles
+import com.acemusicgen.data.ModelLocation
+import com.acemusicgen.data.ModelPlace
 import com.acemusicgen.data.OutputCategory
 import com.acemusicgen.data.OutputRouting
 import com.acemusicgen.data.DeviceInfo
@@ -103,6 +110,7 @@ fun GenerateScreen(vm: MainViewModel) {
     val templates by vm.templates.collectAsState()
     val checking by vm.checking.collectAsState()
     val preflight by vm.preflight.collectAsState()
+    var showReport by rememberSaveable { mutableStateOf(false) }
     // System file picker (Storage Access Framework): no storage permission, the user chooses exactly which files
     val pickTracks = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { vm.addInputs(it) }
     val pickTemplates = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { vm.addTemplates(it) }
@@ -158,7 +166,10 @@ fun GenerateScreen(vm: MainViewModel) {
             }
         } else {
             when (job.phase) {
-                Phase.DONE -> SectionCard(stringResource(R.string.results_title)) { job.results.forEach { Text(it) } }
+                Phase.DONE -> SectionCard(stringResource(R.string.results_title)) {
+                    job.results.forEach { Text(it) }
+                    TextButton(onClick = { showReport = true }) { Text(stringResource(R.string.report_button)) }
+                }
                 Phase.FAILED -> SectionCard(stringResource(R.string.error_title)) { Text(job.error ?: "", color = MaterialTheme.colorScheme.error) }
                 Phase.CANCELLED, Phase.TIMED_OUT -> SectionCard(job.status) { }
                 else -> {}
@@ -179,6 +190,7 @@ fun GenerateScreen(vm: MainViewModel) {
     preflight?.let { r ->
         PreflightDialog(r, s.thermalProtection, onConfirm = { vm.confirmStart(r) }, onDismiss = vm::dismissPreflight)
     }
+    if (showReport) ReportDialog(s, job.results, onDismiss = { showReport = false })
 }
 
 @Composable
@@ -191,6 +203,17 @@ fun SettingsScreen(vm: MainViewModel) {
     fun f(v: Float?) = v?.toString() ?: ""
 
     Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
+        SectionCard(stringResource(R.string.set_language)) {
+            val lang = remember { AppLanguage.get(ctx) }
+            // language names are written in their own language, so they can be found whatever the current UI language is
+            ChoiceRow(stringResource(R.string.set_language_label), listOf(
+                AppLanguage.SYSTEM to stringResource(R.string.lang_system),
+                "en" to "English",
+                "pl" to "Polski"), lang) { t ->
+                (ctx as? android.app.Activity)?.let { AppLanguage.set(it, t) }
+            }
+        }
+
         SectionCard(stringResource(R.string.set_model)) {
             ChoiceRow(stringResource(R.string.set_dit), ModelCatalog.DIT_MODELS.map { it to it.removePrefix("acestep-v15-") }, s.model) { m -> vm.update { it.copy(model = m) } }
             ChoiceRow(stringResource(R.string.set_quant), ModelCatalog.QUANTS.map { it to it }, s.quant) { q -> vm.update { it.copy(quant = q) } }
@@ -223,7 +246,23 @@ fun SettingsScreen(vm: MainViewModel) {
                 CoreSet.EFFICIENCY to stringResource(R.string.set_cores_eff), CoreSet.PERFORMANCE to stringResource(R.string.set_cores_perf)), s.coreSet) { c ->
                 vm.update { it.copy(coreSet = c) }
             }
-            SwitchRow(stringResource(R.string.set_low_priority), s.lowPriority) { v -> vm.update { it.copy(lowPriority = v) } }
+            ChoiceRow(stringResource(R.string.set_priority), listOf(
+                Priority.LOW to stringResource(R.string.prio_low),
+                Priority.BELOW_NORMAL to stringResource(R.string.prio_below_normal),
+                Priority.NORMAL to stringResource(R.string.prio_normal),
+                Priority.ABOVE_NORMAL to stringResource(R.string.prio_above_normal),
+                Priority.HIGH to stringResource(R.string.prio_high),
+                Priority.REALTIME to stringResource(R.string.prio_realtime)), s.priority) { p ->
+                vm.update { it.copy(priority = p) }
+            }
+            Text(stringResource(when (s.priority) {
+                Priority.LOW -> R.string.prio_low_info
+                Priority.BELOW_NORMAL -> R.string.prio_below_normal_info
+                Priority.NORMAL -> R.string.prio_normal_info
+                Priority.ABOVE_NORMAL, Priority.HIGH -> R.string.prio_raised_info
+                Priority.REALTIME -> R.string.prio_realtime_info
+            }), style = MaterialTheme.typography.bodySmall,
+                color = if (s.priority == Priority.REALTIME) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
             SwitchRow(stringResource(R.string.set_thermal), s.thermalProtection) { v -> vm.update { it.copy(thermalProtection = v) } }
             if (s.thermalProtection) {
                 ChoiceRow(stringResource(R.string.set_thermal_level), listOf(
@@ -296,17 +335,58 @@ fun SettingsScreen(vm: MainViewModel) {
 fun ModelsScreen(vm: MainViewModel) {
     val s by vm.settings.collectAsState()
     val version by vm.modelsVersion.collectAsState()
+    val job by vm.job.collectAsState()
+    val task by vm.storageTask.collectAsState()
     val dir = vm.modelsDir
     LaunchedEffect(Unit) { vm.refreshSizes() }
     val required = remember(s, version) { ModelCatalog.requiredFiles(s) }
-    val onPhone = remember(version) { dir.listFiles()?.filter { it.isFile }?.sortedBy { it.name } ?: emptyList<File>() }
+    val onPhone = remember(version, s.modelsLocation) { dir?.let { ModelFiles.list(it) } ?: emptyList() }
+    val locations = remember(version, s.modelsLocation) { vm.modelLocations() }
+    var pendingSwitch by remember { mutableStateOf<ModelLocation?>(null) }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isNotEmpty()) vm.importModels(uris)
+    }
+    val busy = job.running || task?.finished == false
+
     Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
         Text(stringResource(R.string.models_source, ModelCatalog.SOURCE_DESCRIPTION), style = MaterialTheme.typography.bodySmall)
-        Text(stringResource(R.string.models_used_space, formatBytes(onPhone.sumOf { it.length() }), formatBytes(DeviceInfo.freeBytes(dir))),
-            style = MaterialTheme.typography.bodySmall)
+        if (dir != null) {
+            Text(stringResource(R.string.models_used_space, formatBytes(onPhone.sumOf { it.length() }), formatBytes(DeviceInfo.freeBytes(dir))),
+                style = MaterialTheme.typography.bodySmall)
+        }
+
+        SectionCard(stringResource(R.string.models_location_title)) {
+            Text(stringResource(R.string.models_location_info), style = MaterialTheme.typography.bodySmall)
+            if (dir == null) Text(stringResource(R.string.models_location_missing), color = MaterialTheme.colorScheme.error)
+            locations.forEach { loc ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    RadioButton(selected = loc.id == s.modelsLocation, enabled = !busy,
+                        onClick = { if (loc.id != s.modelsLocation) pendingSwitch = loc })
+                    Column(Modifier.weight(1f)) {
+                        Text(locationLabel(loc), style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.models_location_free, formatBytes(loc.free), formatBytes(loc.total)),
+                            style = MaterialTheme.typography.bodySmall)
+                        Text(loc.dir.path, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+                    }
+                }
+            }
+            if (locations.none { it.place == ModelPlace.SD_CARD }) {
+                Text(stringResource(R.string.models_location_no_sd), style = MaterialTheme.typography.bodySmall)
+            }
+            Text(stringResource(R.string.models_location_uninstall), style = MaterialTheme.typography.bodySmall)
+            if (busy && job.running) Text(stringResource(R.string.models_location_busy), style = MaterialTheme.typography.bodySmall)
+        }
+
+        SectionCard(stringResource(R.string.models_import_title)) {
+            Text(stringResource(R.string.models_import_info), style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(enabled = !busy && dir != null, onClick = { importLauncher.launch(arrayOf("*/*")) }) {
+                Text(stringResource(R.string.models_import_button))
+            }
+        }
+
         SectionCard(stringResource(R.string.models_required)) {
             required.forEach { m ->
-                val ok = ModelCatalog.isDownloaded(dir, m)
+                val ok = dir != null && ModelCatalog.isDownloaded(dir, m)
                 Text("${m.name} - ${formatBytes(m.sizeBytes)} - ${stringResource(if (ok) R.string.model_ok else R.string.model_missing)}",
                     style = MaterialTheme.typography.bodyMedium)
             }
@@ -316,11 +396,68 @@ fun ModelsScreen(vm: MainViewModel) {
             onPhone.forEach { f ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("${f.name} (${formatBytes(f.length())})", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                    TextButton(onClick = { vm.deleteModel(f.name.removeSuffix(".part")) }) { Text(stringResource(R.string.delete)) }
+                    TextButton(enabled = !busy, onClick = { vm.deleteModel(f.name.removeSuffix(".part")) }) { Text(stringResource(R.string.delete)) }
                 }
             }
         }
     }
+
+    pendingSwitch?.let { target ->
+        val toMove = remember(target.id) { vm.bytesToMove(target.id) }
+        AlertDialog(
+            onDismissRequest = { pendingSwitch = null },
+            title = { Text(stringResource(R.string.models_switch_title, locationLabel(target))) },
+            text = {
+                Text(if (onPhone.isEmpty()) stringResource(R.string.models_switch_empty)
+                     else stringResource(R.string.models_switch_body, formatBytes(toMove), formatBytes(target.free)))
+            },
+            confirmButton = {
+                TextButton(onClick = { vm.setModelsLocation(target.id, move = onPhone.isNotEmpty()); pendingSwitch = null }) {
+                    Text(stringResource(if (onPhone.isEmpty()) R.string.models_switch_ok else R.string.models_switch_move))
+                }
+            },
+            dismissButton = {
+                Row {
+                    if (onPhone.isNotEmpty()) TextButton(onClick = { vm.setModelsLocation(target.id, move = false); pendingSwitch = null }) {
+                        Text(stringResource(R.string.models_switch_keep))
+                    }
+                    TextButton(onClick = { pendingSwitch = null }) { Text(stringResource(R.string.cancel)) }
+                }
+            },
+        )
+    }
+
+    task?.let { t ->
+        AlertDialog(
+            onDismissRequest = { vm.dismissStorageTask() },
+            title = { Text(t.title) },
+            text = {
+                Column {
+                    if (!t.finished) {
+                        if (t.file.isNotEmpty()) Text(t.file, style = MaterialTheme.typography.bodySmall)
+                        if (t.total > 0) {
+                            LinearProgressIndicator(progress = { (t.done.toDouble() / t.total).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+                            Text("${formatBytes(t.done)} / ${formatBytes(t.total)}", style = MaterialTheme.typography.bodySmall)
+                        } else {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+                        }
+                    }
+                    if (!t.error.isNullOrEmpty()) Text(t.error, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            confirmButton = {
+                if (t.finished) TextButton(onClick = { vm.dismissStorageTask() }) { Text(stringResource(R.string.ok)) }
+                else TextButton(onClick = { vm.cancelStorageTask() }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+}
+
+@Composable
+private fun locationLabel(loc: ModelLocation): String = when (loc.place) {
+    ModelPlace.APP_PRIVATE -> stringResource(R.string.models_place_app)
+    ModelPlace.PHONE -> stringResource(R.string.models_place_phone)
+    ModelPlace.SD_CARD -> stringResource(R.string.models_place_sd, loc.name.ifEmpty { "SD" })
 }
 
 @Composable

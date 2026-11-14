@@ -9,6 +9,17 @@ import org.json.JSONObject
 /** Which cores the native engine may run on. */
 enum class CoreSet { ALL, EFFICIENCY, PERFORMANCE }
 
+/**
+ * Process priority of the native engine, named like the Windows Task Manager levels. Mapped to the Linux nice value
+ * (-20 = highest, 19 = lowest). Android lets an app lower its own processes freely; raising above normal works on most
+ * phones (the system allows nice down to -20 for app processes) but may be refused, then the engine runs at normal.
+ * True real-time scheduling (SCHED_FIFO) is reserved for the system on Android, so REALTIME = the highest nice value.
+ */
+enum class Priority(val nice: Int) {
+    LOW(19), BELOW_NORMAL(10), NORMAL(0), ABOVE_NORMAL(-5), HIGH(-10), REALTIME(-20);
+    val raised: Boolean get() = nice < 0
+}
+
 /** All user settings. Generation settings map 1:1 to the constants of the Python scripts (see toPythonSettings). */
 data class AppSettings(
     // --- generation
@@ -51,13 +62,15 @@ data class AppSettings(
     val threads: Int = 0,                           // 0 = automatic (all big cores)
     val cpuMaxPercent: Int = 100,                   // duty-cycle limit of the native process (10..100 %)
     val coreSet: CoreSet = CoreSet.ALL,
-    val lowPriority: Boolean = true,                // nice 10: the phone stays responsive
+    val priority: Priority = Priority.BELOW_NORMAL, // nice 10: the phone stays responsive
     val thermalProtection: Boolean = true,          // pause when the phone gets hot
     val thermalPauseLevel: Int = 3,                 // PowerManager.THERMAL_STATUS_SEVERE
     // --- network
     val wifiOnly: Boolean = true,
     // --- save locations: OutputCategory.key -> folder picked by the user (SAF tree URI); missing = default location
     val outputFolders: Map<String, String> = emptyMap(),
+    /** Where models are stored: ModelStorage.APP, PHONE (default) or "sd:<uuid>". */
+    val modelsLocation: String = ModelStorage.DEFAULT,
 ) {
     fun effectiveSteps(): Int = steps ?: if ("turbo" in model) 8 else 32
 
@@ -137,9 +150,10 @@ data class AppSettings(
         put("exportUsedSounds", exportUsedSounds); put("exportStems", exportStems)
         put("formatMono", formatMono); put("formatStereo", formatStereo); put("formatSurround", formatSurround)
         put("ramAuto", ramAuto); put("ramLimitMb", ramLimitMb); put("threads", threads); put("cpuMaxPercent", cpuMaxPercent)
-        put("coreSet", coreSet.name); put("lowPriority", lowPriority); put("thermalProtection", thermalProtection)
+        put("coreSet", coreSet.name); put("priority", priority.name); put("thermalProtection", thermalProtection)
         put("thermalPauseLevel", thermalPauseLevel); put("wifiOnly", wifiOnly)
         put("outputFolders", JSONObject(outputFolders as Map<*, *>))
+        put("modelsLocation", modelsLocation)
     }
 
     companion object {
@@ -168,9 +182,13 @@ data class AppSettings(
                 ramAuto = o.optBoolean("ramAuto", d.ramAuto), ramLimitMb = o.optInt("ramLimitMb", d.ramLimitMb),
                 threads = o.optInt("threads", d.threads), cpuMaxPercent = o.optInt("cpuMaxPercent", d.cpuMaxPercent),
                 coreSet = runCatching { CoreSet.valueOf(o.optString("coreSet", d.coreSet.name)) }.getOrDefault(d.coreSet),
-                lowPriority = o.optBoolean("lowPriority", d.lowPriority), thermalProtection = o.optBoolean("thermalProtection", d.thermalProtection),
+                priority = runCatching { Priority.valueOf(o.getString("priority")) }.getOrElse {
+                    // settings saved by version 1.0 had a single "low priority" switch
+                    if (o.optBoolean("lowPriority", true)) Priority.BELOW_NORMAL else Priority.NORMAL
+                }, thermalProtection = o.optBoolean("thermalProtection", d.thermalProtection),
                 thermalPauseLevel = o.optInt("thermalPauseLevel", d.thermalPauseLevel), wifiOnly = o.optBoolean("wifiOnly", d.wifiOnly),
                 outputFolders = o.optJSONObject("outputFolders")?.let { f -> f.keys().asSequence().associateWith { f.getString(it) } } ?: emptyMap(),
+                modelsLocation = o.optString("modelsLocation", d.modelsLocation),
             )
         }
     }

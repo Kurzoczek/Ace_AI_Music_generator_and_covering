@@ -59,6 +59,8 @@ fun PreflightDialog(r: PreflightReport, thermalProtection: Boolean, onConfirm: (
                 }
                 Block(Icons.Default.SdStorage, stringResource(R.string.pf_storage_title)) {
                     Text(stringResource(R.string.pf_storage_body, formatBytes(r.modelsOnDiskBytes), formatBytes(r.outputEstimateBytes), formatBytes(r.freeBytes)))
+                    Text(stringResource(R.string.pf_models_where, r.modelsDir), style = MaterialTheme.typography.bodySmall)
+                    if (r.workFreeBytes != r.freeBytes) Text(stringResource(R.string.pf_work_free, formatBytes(r.workFreeBytes)), style = MaterialTheme.typography.bodySmall)
                     if (!r.enoughSpace) Warn(stringResource(R.string.pf_storage_low))
                 }
                 Block(Icons.Default.Memory, stringResource(R.string.pf_ram_title)) {

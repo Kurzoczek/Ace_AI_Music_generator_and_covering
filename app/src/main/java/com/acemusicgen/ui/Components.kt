@@ -26,13 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import java.util.Locale
-
-fun formatBytes(b: Long): String = when {
-    b >= 1_000_000_000L -> String.format(Locale.getDefault(), "%.2f GB", b / 1e9)
-    b >= 1_000_000L -> String.format(Locale.getDefault(), "%.0f MB", b / 1e6)
-    else -> String.format(Locale.getDefault(), "%.0f kB", b / 1e3)
-}
 
 @Composable
 fun SectionCard(title: String, content: @Composable () -> Unit) {

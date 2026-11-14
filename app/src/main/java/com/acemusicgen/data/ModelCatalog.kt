@@ -76,6 +76,9 @@ object ModelCatalog {
         }
     }
 
+    /** Exact size and SHA-256 of a file in the repository (after refreshFromServer), or null if unknown. */
+    fun knownFile(name: String): Pair<Long, String?>? = remote[name]
+
     fun file(name: String, role: String): ModelFile {
         val r = remote[name]
         return if (r != null) ModelFile(name, role, r.first, true, r.second) else ModelFile(name, role, approx(name), false)

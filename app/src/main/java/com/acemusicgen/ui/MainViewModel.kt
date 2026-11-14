@@ -12,6 +12,11 @@ import com.acemusicgen.data.AppSettings
 import com.acemusicgen.data.OutputCategory
 import com.acemusicgen.data.DeviceInfo
 import com.acemusicgen.data.ModelCatalog
+import com.acemusicgen.data.ModelFiles
+import com.acemusicgen.data.ModelLocation
+import com.acemusicgen.data.ModelStorage
+import com.acemusicgen.R
+import com.acemusicgen.engine.Phase
 import com.acemusicgen.data.Preflight
 import com.acemusicgen.data.PreflightReport
 import com.acemusicgen.engine.GenerationService
@@ -43,7 +48,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _modelsVersion = MutableStateFlow(0)
     val modelsVersion: StateFlow<Int> = _modelsVersion
 
-    val modelsDir: File get() = GenerationService.modelsDir(getApplication())
+    /** Current model folder; null when the chosen storage (SD card) is not available right now. */
+    val modelsDir: File? get() = GenerationService.modelsDir(getApplication())
 
     fun update(transform: (AppSettings) -> AppSettings) = store.update(transform)
 
@@ -76,7 +82,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _checking.value = true
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                _preflight.value = Preflight.build(getApplication(), settings.value, modelsDir, _inputs.value.map { it.durationSec })
+                val dir = modelsDir
+                if (dir == null) {
+                    JobRepository.update { it.copy(phase = Phase.FAILED, error = getApplication<Application>().getString(R.string.models_location_missing)) }
+                    return@launch
+                }
+                _preflight.value = Preflight.build(getApplication(), settings.value, dir, _inputs.value.map { it.durationSec })
             } finally {
                 _checking.value = false
             }
@@ -102,10 +113,122 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteModel(name: String) = viewModelScope.launch(Dispatchers.IO) {
-        File(modelsDir, name).delete()
-        File(modelsDir, "$name.part").delete()
+        val dir = modelsDir ?: return@launch
+        File(dir, name).delete()
+        File(dir, "$name.part").delete()
         _modelsVersion.value++
     }
+
+    // ---------- model storage location (app folders only: the native engine needs real file paths)
+    data class StorageTask(val title: String, val file: String = "", val done: Long = 0, val total: Long = 0,
+                           val error: String? = null, val finished: Boolean = false)
+
+    private val _storageTask = MutableStateFlow<StorageTask?>(null)
+    val storageTask: StateFlow<StorageTask?> = _storageTask
+    @Volatile private var storageCancel = false
+
+    fun modelLocations(): List<ModelLocation> = ModelStorage.locations(getApplication())
+
+    /** Bytes that would be copied when switching to [id] with "move models". */
+    fun bytesToMove(id: String): Long {
+        val from = modelsDir ?: return 0
+        val to = ModelStorage.dirFor(getApplication(), id) ?: return 0
+        return ModelFiles.bytesToMove(from, to)
+    }
+
+    /** Switches the model folder; with [move] the models already downloaded are moved there first. */
+    fun setModelsLocation(id: String, move: Boolean) {
+        if (job.value.running || _storageTask.value?.finished == false) return
+        val ctx = getApplication<Application>()
+        val from = modelsDir
+        val to = ModelStorage.dirFor(ctx, id) ?: return
+        if (!move || from == null || ModelFiles.list(from).isEmpty()) {
+            store.update { it.copy(modelsLocation = id) }
+            _modelsVersion.value++
+            return
+        }
+        storageCancel = false
+        val title = ctx.getString(R.string.models_moving)
+        _storageTask.value = StorageTask(title)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                ModelFiles.move(from, to, { DeviceInfo.freeBytes(it) }, { storageCancel }) { done, total, name ->
+                    _storageTask.value = StorageTask(title, name, done, total)
+                }
+                store.update { it.copy(modelsLocation = id) }
+                _storageTask.value = StorageTask(ctx.getString(R.string.models_moved), finished = true)
+            } catch (e: ModelFiles.NotEnoughSpace) {
+                _storageTask.value = StorageTask(title, error = ctx.getString(R.string.models_move_no_space,
+                    formatBytes(e.needed), formatBytes(e.free)), finished = true)
+            } catch (e: ModelFiles.Cancelled) {
+                ModelFiles.cleanTemp(to)
+                _storageTask.value = StorageTask(ctx.getString(R.string.models_move_cancelled), finished = true)
+            } catch (e: Exception) {
+                ModelFiles.cleanTemp(to)
+                _storageTask.value = StorageTask(title, error = e.message ?: e.javaClass.simpleName, finished = true)
+            } finally {
+                _modelsVersion.value++
+            }
+        }
+    }
+
+    /** Copies .gguf files picked by the user (e.g. downloaded on a computer) into the model folder, verified when possible. */
+    fun importModels(uris: List<Uri>) {
+        if (job.value.running || _storageTask.value?.finished == false) return
+        val ctx = getApplication<Application>()
+        val dir = modelsDir ?: run {
+            _storageTask.value = StorageTask(ctx.getString(R.string.models_importing), error = ctx.getString(R.string.models_location_missing), finished = true)
+            return
+        }
+        storageCancel = false
+        val title = ctx.getString(R.string.models_importing)
+        _storageTask.value = StorageTask(title)
+        viewModelScope.launch(Dispatchers.IO) {
+            ModelCatalog.refreshFromServer()
+            val ok = ArrayList<String>()
+            val failed = ArrayList<String>()
+            try {
+                for (uri in uris) {
+                    if (storageCancel) throw ModelFiles.Cancelled()
+                    val name = ctx.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)
+                        ?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: uri.lastPathSegment ?: "model.gguf"
+                    if (!name.endsWith(".gguf")) { failed += ctx.getString(R.string.models_import_not_gguf, name); continue }
+                    val known = ModelCatalog.knownFile(name)
+                    val size = known?.first ?: ctx.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+                        ?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null } ?: 0L
+                    if (size > 0 && size + ModelFiles.RESERVE_BYTES > DeviceInfo.freeBytes(dir)) {
+                        failed += ctx.getString(R.string.models_move_no_space, formatBytes(size + ModelFiles.RESERVE_BYTES), formatBytes(DeviceInfo.freeBytes(dir)))
+                        continue
+                    }
+                    try {
+                        val input = ctx.contentResolver.openInputStream(uri) ?: throw java.io.IOException("cannot open $name")
+                        ModelFiles.importStream(input, name, dir, known?.first, known?.second, { storageCancel }) { done ->
+                            _storageTask.value = StorageTask(title, name, done, size)
+                        }
+                        ok += name
+                    } catch (e: ModelFiles.Cancelled) {
+                        throw e
+                    } catch (e: Exception) {
+                        failed += e.message ?: name
+                    }
+                }
+                val summary = buildString {
+                    append(ctx.getString(R.string.models_imported, ok.size))
+                    if (ok.any { ModelCatalog.knownFile(it) == null }) append("\n").append(ctx.getString(R.string.models_import_unknown))
+                    failed.forEach { append("\n- ").append(it) }
+                }
+                _storageTask.value = StorageTask(summary, finished = true, error = if (failed.isNotEmpty() && ok.isEmpty()) "" else null)
+            } catch (e: ModelFiles.Cancelled) {
+                ModelFiles.cleanTemp(dir)
+                _storageTask.value = StorageTask(ctx.getString(R.string.models_import_cancelled), finished = true)
+            } finally {
+                _modelsVersion.value++
+            }
+        }
+    }
+
+    fun cancelStorageTask() { storageCancel = true }
+    fun dismissStorageTask() { if (_storageTask.value?.finished == true) _storageTask.value = null }
 
     fun deviceRamMb(): Long = DeviceInfo.memory(getApplication()).totalMb
 

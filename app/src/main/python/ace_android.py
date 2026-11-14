@@ -150,11 +150,15 @@ class AndroidCppEngine:
         return file if file and (self.models_dir / file).exists() else None
 
     def _preexec(self):
+        # absolute nice value (-20 highest .. 19 lowest), independent of the calling thread's own priority;
+        # if raising above normal is refused by the system, fall back to normal (0)
         try:
-            if self.nice:
-                os.nice(self.nice)
+            os.setpriority(os.PRIO_PROCESS, 0, self.nice)
         except Exception:
-            pass
+            try:
+                os.setpriority(os.PRIO_PROCESS, 0, max(0, self.nice))
+            except Exception:
+                pass
         try:
             if self.cores:
                 os.sched_setaffinity(0, set(self.cores))
@@ -173,6 +177,14 @@ class AndroidCppEngine:
                                      cwd=str(self.models_dir), preexec_fn=self._preexec, start_new_session=True)
         pid = self.proc.pid
         self.bridge.onNativeStart(pid, stage)
+        if not getattr(self, "_prio_logged", False):
+            self._prio_logged = True
+            try:
+                got = os.getpriority(os.PRIO_PROCESS, pid)
+                note = "" if got == self.nice else " - the system did not allow more, running at the closest allowed level"
+                print(f"[PRIORITY] nice requested {self.nice}, active {got}{note}")
+            except Exception:
+                pass
         lines, tail, peak = [], [], 0
         lock = threading.Lock()
 

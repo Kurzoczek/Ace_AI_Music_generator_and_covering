@@ -6,18 +6,26 @@ plugins {
 }
 
 val aceArmArch: String = (project.findProperty("aceArmArch") as String?) ?: "armv8.2-a+dotprod+fp16"
+// Where "Report content" sends reports: an e-mail address if set, otherwise a new GitHub issue in this repository.
+val aceReportEmail: String = (project.findProperty("aceReportEmail") as String?)?.trim() ?: ""
+val aceReportUrl: String = (project.findProperty("aceReportUrl") as String?)?.trim()
+    ?: "https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/issues/new"
+// Google Play needs a higher versionCode for every upload: CI builds use the run number, local builds 2.
+val aceVersionCode: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.plus(100) ?: 2
 
 android {
     namespace = "com.acemusicgen"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "com.acemusicgen"
         minSdk = 29                 // Android 10: scoped storage (MediaStore), FGS types, thermal API
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 36             // Google Play: new apps and updates must target Android 16 (API 36)
+        versionCode = aceVersionCode
+        versionName = "1.1.0"
+        buildConfigField("String", "REPORT_EMAIL", "\"$aceReportEmail\"")
+        buildConfigField("String", "REPORT_URL", "\"$aceReportUrl\"")
 
         ndk {
             // acestep.cpp needs 64-bit; x86_64 only for the emulator
@@ -45,6 +53,18 @@ android {
     // build is unsigned; debug builds always work.
     val keystoreFile = System.getenv("ACE_KEYSTORE_FILE")
     signingConfigs {
+        // Debug key from GitHub secrets (ACE_DEBUG_KEYSTORE_*), so every CI build is signed with the same key and installs
+        // as an update keeping the app data. No key in the repository; without the secrets (local / Dependabot builds)
+        // the standard Android debug key of that machine is used.
+        val debugKeystore = System.getenv("ACE_DEBUG_KEYSTORE_FILE")
+        if (debugKeystore != null && file(debugKeystore).exists()) {
+            getByName("debug") {
+                storeFile = file(debugKeystore)
+                storePassword = System.getenv("ACE_DEBUG_KEYSTORE_PASSWORD")
+                keyAlias = "acedebug"
+                keyPassword = System.getenv("ACE_DEBUG_KEYSTORE_PASSWORD")
+            }
+        }
         if (keystoreFile != null && file(keystoreFile).exists()) {
             create("release") {
                 storeFile = file(keystoreFile)

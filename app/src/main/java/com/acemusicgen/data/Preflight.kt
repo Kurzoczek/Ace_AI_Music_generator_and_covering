@@ -14,8 +14,10 @@ data class PreflightReport(
     val host: String,
     val modelsOnDiskBytes: Long,        // space all models of this configuration occupy after download
     val outputEstimateBytes: Long,      // results + temporary files
-    val freeBytes: Long,
+    val freeBytes: Long,                // free space where the models go
+    val workFreeBytes: Long,            // free space for results / temporary files (internal storage)
     val enoughSpace: Boolean,
+    val modelsDir: String,              // where the models are / will be stored
     val network: DeviceInfo.Network,
     val wifiOnlyBlocked: Boolean,
     val deviceRamMb: Long,
@@ -65,6 +67,10 @@ object Preflight {
         val channels = s.channelFormats().map { when (it) { "mono" -> 1; "stereo" -> 2; else -> 6 } }.sum()
         val outputBytes = (totalAudio * 48_000 * 2 * channels * 2.2 + totalAudio * 48_000 * 2 * 2 * 3).toLong()
         val free = DeviceInfo.freeBytes(modelsDir)
+        val workFree = DeviceInfo.freeBytes(context.filesDir)
+        val reserve = 200L * 1024 * 1024
+        val enough = if (DeviceInfo.sameVolume(modelsDir, context.filesDir)) free > downloadBytes + outputBytes + reserve
+                     else free > downloadBytes + reserve && workFree > outputBytes + reserve
         val net = DeviceInfo.network(context)
         val mem = DeviceInfo.memory(context)
         val plan = MemoryPlanner(context).plan(s, duration)
@@ -72,7 +78,7 @@ object Preflight {
             toDownload = missing, downloadBytes = downloadBytes, sizesExact = ModelCatalog.hasExactSizes,
             source = ModelCatalog.SOURCE_DESCRIPTION, host = ModelCatalog.HOST,
             modelsOnDiskBytes = required.sumOf { it.sizeBytes }, outputEstimateBytes = outputBytes,
-            freeBytes = free, enoughSpace = free > downloadBytes + outputBytes + 200L * 1024 * 1024,
+            freeBytes = free, workFreeBytes = workFree, enoughSpace = enough, modelsDir = modelsDir.path,
             network = net, wifiOnlyBlocked = downloadBytes > 0 && s.wifiOnly && (net.metered || !net.connected),
             deviceRamMb = mem.totalMb, availableRamMb = mem.availableMb, plan = plan, durationSec = duration,
             thermalStatus = DeviceInfo.thermalStatus(context),

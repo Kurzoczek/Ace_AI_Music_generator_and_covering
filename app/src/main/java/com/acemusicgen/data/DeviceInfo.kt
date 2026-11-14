@@ -27,6 +27,14 @@ object DeviceInfo {
         return if (d == null) 0L else StatFs(d.path).availableBytes
     }
 
+    /** True when both paths are on the same filesystem (so their free space is shared). */
+    fun sameVolume(a: File, b: File): Boolean = try {
+        fun existing(f: File): File { var d: File? = f; while (d != null && !d.exists()) d = d.parentFile; return d ?: File("/") }
+        android.system.Os.stat(existing(a).path).st_dev == android.system.Os.stat(existing(b).path).st_dev
+    } catch (e: Exception) {
+        true
+    }
+
     /** Max frequency (kHz) of every core; used to tell "big" (performance) and "little" (efficiency) cores apart. */
     fun coreMaxFreqs(): List<Pair<Int, Long>> {
         val n = Runtime.getRuntime().availableProcessors()

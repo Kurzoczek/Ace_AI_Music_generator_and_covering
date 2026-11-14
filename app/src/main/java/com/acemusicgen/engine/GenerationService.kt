@@ -21,6 +21,8 @@ import com.acemusicgen.data.DeviceInfo
 import com.acemusicgen.data.MemoryPlanner
 import com.acemusicgen.data.ModelCatalog
 import com.acemusicgen.data.ModelDownloader
+import com.acemusicgen.data.ModelFiles
+import com.acemusicgen.data.ModelStorage
 import com.acemusicgen.data.Preflight
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
@@ -40,6 +42,10 @@ import java.security.MessageDigest
  */
 class GenerationService : LifecycleService() {
 
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(com.acemusicgen.data.AppLanguage.wrap(base))
+    }
+
     companion object {
         const val ACTION_START = "com.acemusicgen.START"
         const val ACTION_STOP = "com.acemusicgen.STOP"
@@ -51,7 +57,9 @@ class GenerationService : LifecycleService() {
         fun start(context: Context) = context.startForegroundService(Intent(context, GenerationService::class.java).setAction(ACTION_START))
         fun send(context: Context, action: String) = context.startService(Intent(context, GenerationService::class.java).setAction(action))
 
-        fun modelsDir(context: Context): File = File(context.getExternalFilesDir(null) ?: context.filesDir, "models")
+        /** Model folder chosen on the Models tab, or null if that storage (e.g. an SD card) is not available now. */
+        fun modelsDir(context: Context): File? =
+            ModelStorage.dirFor(context, (context.applicationContext as AceApp).settings.state.value.modelsLocation)
         fun workDir(context: Context): File = File(context.filesDir, "work")
     }
 
@@ -130,7 +138,8 @@ class GenerationService : LifecycleService() {
 
     private suspend fun run(request: JobRequest) {
         val s = request.settings
-        val models = modelsDir(this).apply { mkdirs() }
+        val models = (modelsDir(this) ?: throw IllegalStateException(getString(R.string.models_location_missing))).apply { mkdirs() }
+        ModelFiles.cleanTemp(models)
         val work = workDir(this)
         val dirs = listOf("inputs", "templates", "out", "tmp", "ckpt", "logs", "stems").associateWith { File(work, it).apply { mkdirs() } }
 
@@ -216,7 +225,7 @@ class GenerationService : LifecycleService() {
             put("settings", settingsJson)
             put("resources", JSONObject().apply {
                 put("threads", plan.threads)
-                put("nice", if (s.lowPriority) 10 else 0)
+                put("nice", s.priority.nice)
                 put("cores", JSONArray(DeviceInfo.coresFor(s.coreSet)))
                 put("lm_enabled", plan.lmEnabled)
                 put("max_pass_sec", plan.maxPassSec)

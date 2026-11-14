@@ -16,6 +16,10 @@ import com.acemusicgen.ui.MainViewModel
 class MainActivity : ComponentActivity() {
     private val vm: MainViewModel by viewModels()
 
+    override fun attachBaseContext(newBase: android.content.Context) {
+        super.attachBaseContext(com.acemusicgen.data.AppLanguage.wrap(newBase))
+    }
+
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {

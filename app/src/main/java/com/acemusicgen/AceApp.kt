@@ -9,6 +9,10 @@ class AceApp : Application() {
     lateinit var settings: SettingsStore
         private set
 
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(com.acemusicgen.data.AppLanguage.wrap(base))
+    }
+
     override fun onCreate() {
         super.onCreate()
         settings = SettingsStore(this)
