@@ -83,12 +83,23 @@ class GenerationService : LifecycleService() {
         return START_NOT_STICKY
     }
 
+    /**
+     * Promotes the service to the foreground with an explicit type (required for targetSdk 34+).
+     * Calls Service.startForeground directly (API 29+) instead of ServiceCompat, which on some
+     * androidx-core versions masked the Android 15 "mediaProcessing" bit away and passed type 0 ("none"),
+     * which Android rejects. If mediaProcessing is refused anyway, the job continues as dataSync.
+     */
     private fun goForeground(processing: Boolean) {
-        val type = when {
-            processing && Build.VERSION.SDK_INT >= 35 -> ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-            else -> ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        val notification = buildNotification()
+        val dataSync = ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        val wanted = if (processing && Build.VERSION.SDK_INT >= 35) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING else dataSync
+        try {
+            startForeground(NOTIF_ID, notification, wanted)
+        } catch (e: RuntimeException) {
+            if (wanted == dataSync) throw e
+            JobRepository.log("[WARN] mediaProcessing foreground type refused (${e.message}); continuing as dataSync")
+            startForeground(NOTIF_ID, notification, dataSync)
         }
-        ServiceCompat.startForeground(this, NOTIF_ID, buildNotification(), type)
     }
 
     private fun startJob() {
