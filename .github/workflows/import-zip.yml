@@ -2,7 +2,8 @@ name: Import project ZIP
 
 # Upload a ZIP of the project to the main folder of the repository or to incoming/ (GitHub web: Add file ->
 # Upload files) and this workflow
-# unpacks it over the repository, commits the changes, deletes the ZIP and starts the Android build.
+# unpacks it over the repository, commits the changes, deletes the ZIP and then builds the APK in the same run
+# (job "build", which calls android.yml).
 #
 # Not imported (on purpose):
 #   .git                      - local git data from the ZIP
@@ -19,7 +20,6 @@ on:
 
 permissions:
   contents: write     # commit the imported files
-  actions: write      # start the Android build afterwards
 
 concurrency:
   group: import-zip
@@ -29,6 +29,9 @@ jobs:
   import:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      changed: ${{ steps.import.outputs.changed }}
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -94,16 +97,20 @@ jobs:
           echo "names=${names# }" >> "$GITHUB_OUTPUT"
 
       - name: Commit and push
+        id: commit
         if: steps.import.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -q -m "Import ${{ steps.import.outputs.names }}" -m "Unpacked from incoming/ by the Import project ZIP workflow."
+          git commit -q -m "Import ${{ steps.import.outputs.names }}" -m "Unpacked by the Import project ZIP workflow."
           git push
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Start the Android build
-        # pushes made by this workflow do not start other workflows, so the build is started explicitly
-        if: steps.import.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run android.yml --ref main
+  build:
+    # pushes made with the workflow token do not start other workflows, so the build runs here, on the imported commit
+    needs: import
+    if: needs.import.outputs.changed == 'true'
+    uses: ./.github/workflows/android.yml
+    with:
+      ref: ${{ needs.import.outputs.sha }}
+    secrets: inherit
