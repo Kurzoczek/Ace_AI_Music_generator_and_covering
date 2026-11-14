@@ -3,7 +3,6 @@ name: Android build
 on:
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
     paths-ignore: [ '*.zip', 'incoming/**' ]   # a ZIP upload is built after the Import project ZIP workflow unpacks it
   pull_request:
   workflow_dispatch:
@@ -78,55 +77,3 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-  release:
-    # Signed release APK + GitHub Release, only for tags like v1.0.0 and only when the signing secrets exist.
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    permissions:
-      contents: write
-    env:
-      HAS_KEY: ${{ secrets.ACE_KEYSTORE_BASE64 != '' }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Android NDK and CMake
-        run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-36"
-      - name: Signing key from secrets
-        if: env.HAS_KEY == 'true'
-        run: echo "${{ secrets.ACE_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
-      - name: Build release APK
-        if: env.HAS_KEY == 'true'
-        env:
-          ACE_KEYSTORE_FILE: ${{ runner.temp }}/release.jks
-          ACE_KEYSTORE_PASSWORD: ${{ secrets.ACE_KEYSTORE_PASSWORD }}
-          ACE_KEY_ALIAS: ${{ secrets.ACE_KEY_ALIAS }}
-          ACE_KEY_PASSWORD: ${{ secrets.ACE_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon assembleRelease bundleRelease
-      - name: Upload Google Play bundle (AAB)
-        if: env.HAS_KEY == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: AceMusicGen-release-aab
-          path: app/build/outputs/bundle/release/*.aab
-          if-no-files-found: error
-      - name: Publish GitHub Release
-        if: env.HAS_KEY == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
-          generate_release_notes: true
-      - name: No signing key
-        if: env.HAS_KEY != 'true'
-        run: echo "::warning::Release skipped - add the ACE_KEYSTORE_* secrets to publish signed APKs (see README)."
