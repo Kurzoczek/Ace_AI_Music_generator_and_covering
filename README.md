@@ -68,8 +68,8 @@ and keep it outside the repository (`*.jks` is in `.gitignore`). Dependabot chec
 
 `.github/workflows/import-zip.yml`: upload a ZIP of the whole project (GitHub web -> Add file -> Upload files) to the
 main folder of the repository or to `incoming/`. The workflow unpacks it over the repository (the ZIP may contain the
-project directly or inside one folder such as `AceMusicGen/`), commits the changes, deletes the ZIP and starts the
-Android build. Skipped: `.git`, signing keys (`*.p12`, `*.jks`, `*.keystore`), the `acestep.cpp` submodule, build
+project directly or inside one folder such as `AceMusicGen/`), commits the changes, deletes the ZIP and builds the
+APK in the same run (job "build" calls `android.yml`, so the build is listed under the import run). Skipped: `.git`, signing keys (`*.p12`, `*.jks`, `*.keystore`), the `acestep.cpp` submodule, build
 folders, and `.github/workflows/` - GitHub does not let a workflow change workflow files, so changed workflow files
 are listed as a warning and must be uploaded by hand. Files deleted from the project are not deleted from the
 repository by an import.
