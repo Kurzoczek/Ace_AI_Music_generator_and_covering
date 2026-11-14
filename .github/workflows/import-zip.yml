@@ -1,0 +1,109 @@
+name: Import project ZIP
+
+# Upload a ZIP of the project to the main folder of the repository or to incoming/ (GitHub web: Add file ->
+# Upload files) and this workflow
+# unpacks it over the repository, commits the changes, deletes the ZIP and starts the Android build.
+#
+# Not imported (on purpose):
+#   .git                      - local git data from the ZIP
+#   .github/workflows/        - GitHub does not let workflows change workflow files; differences are listed
+#                               as a warning and must be uploaded by hand
+#   app/src/main/cpp/acestep.cpp - the engine submodule (pinned commit, not files)
+#   *.p12 *.jks *.keystore    - signing keys never go into the repository (they belong in Secrets)
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ '*.zip', 'incoming/*.zip' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write     # commit the imported files
+  actions: write      # start the Android build afterwards
+
+concurrency:
+  group: import-zip
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Unpack and copy
+        id: import
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          zips=(*.zip incoming/*.zip)
+          if [ ${#zips[@]} -eq 0 ]; then
+            echo "No ZIP in the main folder or incoming/ - nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          names=""
+          for zip in "${zips[@]}"; do
+            echo "::group::Importing $zip"
+            tmp=$(mktemp -d)
+            unzip -q "$zip" -d "$tmp"
+            # the ZIP may contain the project directly or inside one top folder (e.g. AceMusicGen/)
+            src="$tmp"
+            entries=( "$tmp"/* "$tmp"/.[!.]* )
+            if [ ${#entries[@]} -eq 1 ] && [ -d "${entries[0]}" ] && [ ! -e "$tmp/settings.gradle.kts" ]; then
+              src="${entries[0]}"
+            fi
+            if [ ! -f "$src/settings.gradle.kts" ] || [ ! -d "$src/app" ]; then
+              echo "::error::$zip does not look like this project (no settings.gradle.kts / app/ at its top level)."
+              exit 1
+            fi
+            # workflow files cannot be changed by a workflow: report differences instead
+            if [ -d "$src/.github/workflows" ]; then
+              for f in "$src"/.github/workflows/*; do
+                rel=".github/workflows/$(basename "$f")"
+                if ! cmp -s "$f" "$rel" 2>/dev/null; then
+                  echo "::warning::$rel differs in the ZIP - upload it by hand (workflows cannot change workflow files)."
+                fi
+              done
+            fi
+            # copy everything except the excluded paths (tar keeps permissions such as the executable gradlew)
+            tar -C "$src" -cf - \
+              --exclude=.git \
+              --exclude=./.github/workflows \
+              --exclude=./app/src/main/cpp/acestep.cpp \
+              --exclude=./incoming \
+              --exclude='*.p12' --exclude='*.jks' --exclude='*.keystore' \
+              --exclude=local.properties --exclude=build --exclude=.gradle --exclude=__pycache__ \
+              . | tar -xf -
+            git rm -q --cached "$zip" 2>/dev/null || true
+            rm -f "$zip"
+            names="$names $(basename "$zip")"
+            rm -rf "$tmp"
+            echo "::endgroup::"
+          done
+          git add -A
+          git status --short
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "names=${names# }" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        if: steps.import.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -m "Import ${{ steps.import.outputs.names }}" -m "Unpacked from incoming/ by the Import project ZIP workflow."
+          git push
+
+      - name: Start the Android build
+        # pushes made by this workflow do not start other workflows, so the build is started explicitly
+        if: steps.import.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run android.yml --ref main
