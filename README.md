@@ -1,221 +1,344 @@
-# AI Music Generator and Cover Maker - Android app
+<div align="center">
 
-On-device music generation with **ACE-Step 1.5** (via [acestep.cpp](https://github.com/ServeurpersoCom/acestep.cpp), MIT)
-for Android 10+ (arm64). It replaces the Termux scripts `generate_*_ace_android.py`, `menu_ace_android.py` and
-`install_android.sh`: no Termux, no proot, no manual installation.
+# 🎵 AI Music Generator and Cover Maker 🎸
 
-## Get the code
+**A whole AI music studio in your pocket. No cloud, no subscription, no Termux black magic.** 🪄
+
+[![Android build](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/actions/workflows/android.yml/badge.svg)](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/actions/workflows/android.yml)
+![Android 10+](https://img.shields.io/badge/Android-10%2B-3DDC84?logo=android&logoColor=white)
+![arm64](https://img.shields.io/badge/CPU-arm64%20ARMv8.2-blue)
+![Offline](https://img.shields.io/badge/runs-100%25%20on%20your%20phone-purple)
+
+🇬🇧 English · [🇵🇱 Polski](README.pl.md)
+
+</div>
+
+---
+
+## 📦 Downloads
+
+| What | Where | For whom |
+|---|---|---|
+| 📱 **APK (install on your phone)** | [**Releases → latest**](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/releases/latest) → `AceMusicGen-vX.Y.Z.apk` | normal humans 🙂 |
+| 🏪 **AAB (Google Play bundle)** | same release → `AceMusicGen-vX.Y.Z.aab` | future Play Store hero 🦸 |
+| 🧪 **Fresh test build** | [Actions](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/actions) → newest green run → *Artifacts* → `AceMusicGen-debug` | the impatient ones ⚡ |
+| 🧑‍💻 **Source code** | `git clone --recurse-submodules https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering.git` | builders and tinkerers 🔧 |
+| 🗜️ **Source as ZIP** | [main.zip](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/archive/refs/heads/main.zip) ⚠️ *without the engine submodule - see [Build](#-building-it-yourself)* | read-only browsing 👀 |
+
+> 🔒 The repository is private for now, so these links work only for people who have access to it.
+> 🏷️ No release yet? Somebody has to press **Actions → Release → Run workflow** first (see [Releases](#-making-a-release)).
+
+---
+
+## 🤔 What is this thing?
+
+You give it a song 🎶 - it gives you **a new version of it**. Or you give it a sentence like *"sad accordion polka
+about Monday mornings"* - and it composes **a brand-new track** 🪗😭.
+
+Under the hood runs **[ACE-Step 1.5](https://huggingface.co/ACE-Step/Ace-Step1.5)**, a serious music-generating AI, through the
+lightning-fast C++ engine **[acestep.cpp](https://github.com/ServeurpersoCom/acestep.cpp)** 🏎️. Everything happens
+**on your phone**: your music never leaves the device. The only thing that ever travels over the internet is the AI
+model itself, downloaded once (and only after you say "yes, I know it's big") 📥.
+
+It is the grown-up version of the old Termux scripts (`generate_*_ace_android.py`, `menu_ace_android.py`,
+`install_android.sh`): no Termux, no proot, no copy-pasting commands at 2 a.m. 🌙
+
+---
+
+## ✨ Features
+
+### 🎤 Two creative modes
+
+| Mode | What it does | Fun fact |
+|---|---|---|
+| 🔁 **Cover** | Takes your track and remakes it in a new style, keeping its soul (tempo, key, structure) | Your shower recording can finally become a symphony 🚿➡️🎻 |
+| ✍️ **Text** | Writes a completely new track from a description (and optional lyrics) | Describe it, get it. Like ordering pizza, but it's music 🍕 |
+
+* 🎛️ **Cover strength** - from "barely touched" to "who even is this?"
+* ✂️ **Fragments** - remake only `0:30-1:15; 2:00-2:45` and insert them back, or export them separately.
+* 🎨 **Style templates** (optional) - give it a few tracks as "make it sound like this" references.
+* 🎙️ **Instrumental or with lyrics** - your choice, your poetry.
+* 🎲 **Seed** - same seed = same result, so you can reproduce that one lucky take 🍀.
+
+### 🧠 Musical brain (analysis and export)
+
+* 🥁 Detects **tempo, key, chords and song structure** (intro, verse, chorus... the usual suspects).
+* 🎼 Exports **MIDI** and **notation** (MusicXML, LilyPond, plain text) - for when you want to pretend you wrote it 😎
+* 🧩 Saves **sections, loops/samples, stems** and the **slices of your input** that were used.
+* 🔊 Output in **mono, stereo and even surround** - for your 5.1 kitchen speaker setup.
+* 🔬 **PRO analysis** - separates harmonic and percussive parts right on the phone (slower, but smarter).
+
+### 🤖 Models to pick from
+
+* 🏃 **turbo** (fast, 8 steps), 🎯 **sft** and 🧱 **base** (32 steps, more careful) - each in a normal and an **XL** size.
+* 🗜️ Quantization **Q4_K_M** (default, smallest RAM appetite) up to **BF16** (for phones with more RAM than sense).
+* 💬 Optional **language model** (0.6B / 1.7B / 4B) that helps text mode understand what you meant.
+* 📏 Exact sizes and SHA-256 checksums are read from the server - no "approximately 2-ish GB" guessing.
+
+### 🛡️ Safety first: the "are you sure?" dialog
+
+Before anything heavy starts, the app tells you honestly:
+
+* 📥 **how much it will download and from where** (Hugging Face, HTTPS, exact size),
+* 💾 **how much storage** the model will take and how much you have left,
+* 🧮 **how much RAM** the chosen model needs,
+* 🔥 that your phone **may get warm** - it is composing a symphony after all, not checking the weather.
+
+### 🧮 Memory: smart even when there isn't much of it
+
+* 🎚️ **RAM limit**: automatic, or any value you like - **no artificial 10 GB cap**.
+* 🧩 Set it lower than the model needs? The app **does not give up** 💪: shorter passes, fewer threads, no language
+  model, smaller decoding chunks... and if Android kills the engine anyway, it **waits for free memory and continues
+  from the last checkpoint**. Stubborn like a cat at 5 a.m. 🐈
+
+### 🔥 Processor and heat under control
+
+* 🧵 **Threads** - automatic or manual.
+* 🏋️ **Cores** - all, only the efficient ones 🐢, or only the fast ones 🐇.
+* ⏱️ **Max CPU usage in %** - the engine works in short bursts with breaks, like a reasonable employee.
+* 🌡️ **Overheating protection** - pauses when the phone gets hot and resumes after it cools down. No toasted pockets 🍞
+* 🚦 **Process priority, Windows-style:**
+
+| Level | Linux nice | In plain words |
+|---|---|---|
+| 🐢 Low | 19 | works only when the phone is bored |
+| 🚶 Below normal *(default)* | 10 | other apps go first, phone stays smooth |
+| 🚗 Normal | 0 | fair play |
+| 🏎️ Above normal | -5 | music first, Instagram later |
+| 🚀 High | -10 | the phone may get a bit sluggish |
+| ☄️ Realtime | -20 | the highest level Android allows an app. True SCHED_FIFO is reserved for the system, and honestly, that's for the best 😅 |
+
+> If the phone refuses a raised priority, the engine just runs at Normal and the **Log** says so:
+> `[PRIORITY] nice requested -10, active 0`.
+
+### 📁 You decide where things go
+
+* 🗂️ **8 kinds of output** (final track, sections, samples, stems, used slices, MIDI, notation, metadata) - each can
+  go to its own folder. Or press **"One folder for everything"** if you like order 🧹.
+* 🧭 Defaults are always shown, so nothing gets lost in the depths of the file system.
+* 🆘 Folder disappeared (SD card pulled out)? Files go to the default location instead - **no result is ever lost**.
+
+### 🗄️ Where the models live
+
+* 📍 Internal app storage 🔐, phone storage app folder *(default)* or the app folder on an **SD card** 💳.
+* 🚚 **Move models** between them with a progress bar, cancel button and free-space check. An interrupted move never loses a file.
+* 📥 **Import .gguf files** you already have (e.g. downloaded on a computer) - verified against the official size and checksum.
+
+> 🤓 *Why not any folder?* The C++ engine reads models directly as files, and without the "access all files"
+> permission (which Google Play almost never grants) Android allows that only in the app's own folders.
+
+### 🌍 And the cherries on top 🍒
+
+* 🇬🇧🇵🇱 **English and Polish UI**, switchable in Settings → Language (on Android 13+ also in the phone's app settings).
+* 🚩 **Report content** button on every result - required by Google Play for AI generators, and just decent.
+* 🔔 Progress notification, 📶 "Wi-Fi only" downloads, ⏯️ resumable downloads after a lost connection.
+* 📜 **Log** tab for the curious and for bug reports.
+
+---
+
+## 📲 Installation
+
+1. 📥 Download the newest **`AceMusicGen-vX.Y.Z.apk`** from [Releases](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/releases/latest).
+2. 📂 Open it. Android will ask whether your browser / file manager may install apps - say **Allow** (just for this source).
+3. ✅ **Install**, open, allow notifications (optional, but you'll want to know when your hit is ready 🔔).
+
+**Requirements:** Android 10+ 🤖, a 64-bit ARM phone from roughly 2018-2019 or newer (ARMv8.2 with dot-product), a few
+GB of free storage for the model 💾. How much RAM the chosen model needs is shown in the warning dialog before anything starts.
+
+### 🔄 Updating
+
+Just install the new APK over the old one - settings and downloaded models stay ✨.
+
+> 😬 *"App not installed as package conflicts with an existing package"?* That version was signed with a different
+> key (older test builds were signed with a random key). Uninstall once and install again. Want to keep the models
+> (a few GB)? With `adb` on a computer:
+>
+> ```powershell
+> ./adb pull /sdcard/Android/data/com.acemusicgen/files/models .     # 💾 models to the PC
+> ./adb uninstall com.acemusicgen
+> ./adb install AceMusicGen-vX.Y.Z.apk                                # then open the app once
+> ./adb push models /sdcard/Android/data/com.acemusicgen/files/       # 🔙 models back, no new download
+> ```
+>
+> Or use **Models → Import .gguf files** after reinstalling.
+
+---
+
+## 🎬 How to use it (in 60 seconds)
+
+1. 🎵 **Generate** tab → **Add tracks** (any audio Android can play: mp3, opus, flac, wav, m4a...).
+2. 🎨 *(optional)* **Add templates** - tracks whose style you like.
+3. 🔁 Pick **Cover** or ✍️ **Text**, write a short description in English (e.g. *"anime-like opening, energetic"*).
+4. ▶️ **Start** → read the warning dialog (yes, really 😉) → confirm.
+5. ☕ Make a coffee. The first run downloads the model; the next ones go straight to generating.
+6. 🎉 Results land in `Music/ACE_music_gen/` and `Download/ACE_music_gen/` (or wherever you told them to).
+
+### 📂 Where the results go
+
+Every track gets its own folder `<track>_<BPM>bpm_<date>_<time>`:
+
+| Files | Default location |
+|---|---|
+| 🏆 final track | `Music/ACE_music_gen/<track>/final/` |
+| 🧩 sections, 🔁 samples, 🎚️ stems, ✂️ used slices | `Music/ACE_music_gen/<track>/parts/`, `samples/`, `stems/`, `used_sounds/` |
+| 🎹 MIDI | `Download/ACE_music_gen/<track>/midi/` |
+| 🎼 notation (MusicXML, LilyPond, text) | `Download/ACE_music_gen/<track>/notation/` |
+| 🗒️ metadata.json | `Download/ACE_music_gen/<track>/` |
+
+---
+
+## 🔨 Building it yourself
+
+### 🧑‍💻 On a computer
+
+You need: **JDK 17** ☕ (Java 8 will greet you with *"This build uses a Java 8 JVM"* 🙅), Android SDK **36**,
+NDK **27.2.12479018**, CMake **3.22.1**. Android Studio installs the missing pieces itself.
 
 ```bash
-git clone --recurse-submodules <repository URL>
-# already cloned without submodules:
-git submodule update --init --recursive
+git clone --recurse-submodules https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering.git
+cd Ace_AI_Music_generator_and_covering
+./gradlew assembleDebug        # 🎁 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The native engine [acestep.cpp](https://github.com/ServeurpersoCom/acestep.cpp) is a git submodule in
-`app/src/main/cpp/acestep.cpp`, pinned to a tested commit. Model files are never stored in the repository - the app
-downloads them at runtime after the user confirms.
+Already cloned without submodules? `git submodule update --init --recursive` 🩹
 
-## Build
-
-Requirements: **JDK 17** (Gradle must run on Java 17; Java 8 fails with "This build uses a Java 8 JVM"),
-Android Studio Ladybug or newer, Android SDK 35, NDK 27.2.12479018, CMake 3.22.1.
-
-Building from the command line on Windows without Android Studio: point `JAVA_HOME` at a JDK 17 first, e.g. the one
-bundled with Android Studio:
+**Windows without Android Studio** (PowerShell):
 
 ```powershell
 $env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
-java -version                    # must say 17 or newer
+java -version                  # must say 17 or newer
 .\gradlew.bat assembleDebug
 ```
 
-The Android SDK location goes into `local.properties` (`sdk.dir=C\:\\Users\\<you>\\AppData\\Local\\Android\\Sdk`)
-or the `ANDROID_HOME` environment variable.
+The SDK location goes into `local.properties` (`sdk.dir=...`) or the `ANDROID_HOME` variable.
 
-```bash
-./gradlew assembleDebug          # app/build/outputs/apk/debug/app-debug.apk
-```
+🧰 **Tuning knobs** in `gradle.properties`:
 
-The engine is built for ARMv8.2 with dot-product and fp16 instructions (`aceArmArch=armv8.2-a+dotprod+fp16` in
-`gradle.properties`): phones from about 2018-2019 on (Cortex-A55/A75 and newer cores). Very old phones with only
-Cortex-A53/A73 cores are not supported by this build; set `aceArmArch=armv8-a` if you ever need them.
+* `aceArmArch=armv8.2-a+dotprod+fp16` - fast engine for modern phones. Got a fossil 🦕 with only Cortex-A53/A73? Use `armv8-a`.
+* `aceReportEmail=` - where "Report content" sends reports. Empty = a new GitHub issue in this repository.
+* No `numpy` wheel for Python 3.12 in Chaquopy? Set `version = "3.11"` in the `chaquopy` block of `app/build.gradle.kts`.
 
-If Chaquopy reports that no `numpy` wheel matches Python 3.12, set `version = "3.11"` in the `chaquopy` block of
-`app/build.gradle.kts` (the Python code runs on 3.11 and 3.12).
+### ☁️ In the cloud: GitHub Actions (no computer needed!)
 
-## GitHub Actions
+| Workflow | When | What you get |
+|---|---|---|
+| 🧪 `android.yml` | every push to `main`, every pull request | debug APK in *Artifacts* + a check that the Python core matches the desktop script |
+| 📦 `import-zip.yml` | you upload a project ZIP | unpacks, commits, deletes the ZIP and builds the APK - all in one run |
+| 🏷️ `release.yml` | **Run workflow** with a version, or a `v*` tag | signed APK + AAB published as a GitHub Release |
 
-`.github/workflows/android.yml`:
+### 📱 Updating the repository from a phone (ZIP import)
 
-* every push to `main` and every pull request: builds the debug APK (downloadable from the run's *Artifacts*) and
-  checks that `app/src/main/python/ace_core.py` matches the desktop script;
+Coding on the bus? We've got you 🚌:
 
-`.github/workflows/release.yml` - **Actions → Release → Run workflow**, enter a version (e.g. `1.1.0`), or push a tag
-`v1.1.0`: builds the signed release APK and AAB (Google Play) and publishes a GitHub Release `v1.1.0` with both files.
-It signs with the release key from these secrets (*Settings → Secrets and variables → Actions*) and, when they are
-missing, with the debug key (`ACE_DEBUG_KEYSTORE_*`), so the release APK installs over the debug builds:
+1. In the repository: **Add file → Upload files** → drop the project ZIP (main folder or `incoming/`) → **Commit changes**.
+2. ☕ The **Import project ZIP** run unpacks it, commits, removes the ZIP and builds the APK (job *build*).
+3. 📥 The APK is in that run's *Artifacts*.
 
-| Secret | Value |
+Skipped on purpose: `.git`, signing keys (`*.p12`, `*.jks`, `*.keystore` - they belong in Secrets 🔐), the engine
+submodule, build folders, and `.github/workflows/` (GitHub doesn't let a workflow edit workflows, so those are listed as
+a warning to upload by hand). Files deleted from the project are not deleted from the repository by an import.
+
+### 🚀 Making a release
+
+**Actions → Release → Run workflow** → type a version, e.g. `1.1.1` → **Run workflow** → 🍿. You get a GitHub Release
+`v1.1.1` with the APK and the AAB.
+
+### 🔐 Signing keys (repository Secrets)
+
+*Settings → Secrets and variables → Actions*:
+
+| Secret | What for |
 |---|---|
-| `ACE_KEYSTORE_BASE64` | the keystore file in base64 (`base64 -w0 release.jks`, on Windows: `certutil -encode`) |
-| `ACE_KEYSTORE_PASSWORD` | keystore password |
-| `ACE_KEY_ALIAS` | key alias |
-| `ACE_KEY_PASSWORD` | key password |
+| `ACE_DEBUG_KEYSTORE_BASE64`, `ACE_DEBUG_KEYSTORE_PASSWORD` | 🧪 fixed key for test builds and releases installed from GitHub, so updates keep your data (PKCS12, alias `acedebug`) |
+| `ACE_KEYSTORE_BASE64`, `ACE_KEYSTORE_PASSWORD`, `ACE_KEY_ALIAS`, `ACE_KEY_PASSWORD` | 🏪 release key for Google Play (when present, releases use it instead of the debug key) |
 
-Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 4096 -validity 10000 -alias acemusicgen`
-and keep it outside the repository (`*.jks` is in `.gitignore`). Dependabot checks Gradle, Actions and the submodule monthly.
+Create a key: `keytool -genkeypair -keystore ace-debug.p12 -storetype PKCS12 -alias acedebug -keyalg RSA -keysize 2048 -validity 10950`,
+then `base64 -w0 ace-debug.p12` → paste as the secret. 🗝️ **Keep a copy of the key file** - lose it and the next build
+can't update the installed app. No key is ever stored in the repository.
 
-## Updating the repository from a phone (ZIP import)
+`versionCode` in CI = minutes since 2026-01-01, so every build is "newer" than the previous one ⏫.
 
-`.github/workflows/import-zip.yml`: upload a ZIP of the whole project (GitHub web -> Add file -> Upload files) to the
-main folder of the repository or to `incoming/`. The workflow unpacks it over the repository (the ZIP may contain the
-project directly or inside one folder such as `AceMusicGen/`), commits the changes, deletes the ZIP and builds the
-APK in the same run (job "build" calls `android.yml`, so the build is listed under the import run). Skipped: `.git`, signing keys (`*.p12`, `*.jks`, `*.keystore`), the `acestep.cpp` submodule, build
-folders, and `.github/workflows/` - GitHub does not let a workflow change workflow files, so changed workflow files
-are listed as a warning and must be uploaded by hand. Files deleted from the project are not deleted from the
-repository by an import.
+---
 
-## Updating an installed debug build
+## 🔒 Privacy and security
 
-GitHub Actions signs debug APKs with a fixed key taken from two repository secrets (Settings -> Secrets and variables ->
-Actions), so a newer APK installs over the old one and keeps all app data (settings, downloaded models):
+* 🙈 **No account, no ads, no analytics, no own server.** Details: [PRIVACY.md](PRIVACY.md) (EN + PL).
+* 📂 **Files**: opened only through the system picker, no storage permission at all. Results via MediaStore or folders you picked.
+* 🌐 **Network**: HTTPS only, system certificates only, SHA-256 check of every model, optional "Wi-Fi only".
+  No executable code is ever downloaded - the engine is inside the APK.
+* 🔔 **Notifications**: asked at runtime on Android 13+, optional.
+* ⚙️ **Background work**: foreground service (`dataSync` for downloads, `mediaProcessing` for generation on Android 15+),
+  wake lock only while generating, the Android 15 time limit handled with checkpoints.
+* 🧱 **Native code**: run only from `nativeLibraryDir` (W^X compliant), 16 KB page aligned.
+* 💾 **Backup**: only settings - no multi-GB models in your Google Drive 😅.
 
-| Secret | Value |
-|---|---|
-| `ACE_DEBUG_KEYSTORE_BASE64` | PKCS12 keystore (alias `acedebug`) encoded with `base64 -w0` |
-| `ACE_DEBUG_KEYSTORE_PASSWORD` | its password (store and key) |
+## 🏪 Google Play readiness
 
-Create a key yourself with
-`keytool -genkeypair -keystore ace-debug.p12 -storetype PKCS12 -alias acedebug -keyalg RSA -keysize 2048 -validity 10950`.
-No key is stored in the repository. Without the secrets (local builds, Dependabot PRs) the machine's own debug key is
-used and the APK will not install over a CI build. Keep a copy of the keystore: if it is lost, the next build cannot
-update the installed app.
+* 🎯 `targetSdk` / `compileSdk` **36** (Android 16), as Google Play requires.
+* 📦 **AAB** built by the Release workflow.
+* 🚩 **Report content** button (AI-Generated Content policy).
+* 📜 [PRIVACY.md](PRIVACY.md) - fill in the name and contact e-mail and publish it at a **public** URL.
+* 📝 Play Console: declare foreground services `dataSync` and `mediaProcessing` (with a short screen recording each),
+  Data safety: nothing collected or shared. New personal accounts also need a closed test (12 testers, 14 days) 🧑‍🤝‍🧑.
 
-Builds made before this key was introduced must be uninstalled once; to keep the downloaded models:
+---
 
-```powershell
-./adb pull /sdcard/Android/data/com.acemusicgen/files/models .      # save the models (a few GB) to the PC
-./adb uninstall com.acemusicgen
-./adb install app-debug.apk                                          # then open the app once
-./adb push models /sdcard/Android/data/com.acemusicgen/files/        # models back, no new download
-```
-
-## Google Play
-
-* `targetSdk` / `compileSdk` 36 (Android 16), as Google Play requires for new apps and updates.
-* `versionCode` in CI = minutes since 2026-01-01, so every build (debug, import, release) is higher than the previous
-  one and installs as an update.
-* The Release workflow also builds an **AAB** - the format Google Play accepts - attached to the GitHub Release. For
-  Google Play use the release key (`ACE_KEYSTORE_*`), not the debug key.
-* **Report content** button on the results (Google Play AI-Generated Content policy). Set `aceReportEmail=` in
-  `gradle.properties` to receive reports by e-mail; when empty, reports open a new GitHub issue in this repository
-  (`aceReportUrl`).
-* `PRIVACY.md` - privacy policy (EN + PL). Fill in the name and contact e-mail and publish it at a public URL
-  (Google Play needs a public link; a private repository is not public).
-* Play Console declarations: foreground service types `dataSync` (model download) and `mediaProcessing` (generation),
-  each with a short screen recording of the flow; Data safety: no data collected or shared.
-
-## License
-
-The license of this project's own code is not chosen yet - add a `LICENSE` file before publishing. Third-party
-components and their licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-## Architecture
+## 🏗️ Architecture (for the curious 🔍)
 
 | Part | Where | What it does |
 |---|---|---|
-| UI | `ui/` (Jetpack Compose) | tracks / templates picker, mode and prompt, settings, models, log; EN + PL strings |
-| Warning dialog | `ui/PreflightDialog.kt`, `data/Preflight.kt` | before anything starts: download size and source, storage, RAM need, overheating |
-| Models | `data/ModelCatalog.kt`, `data/ModelDownloader.kt` | exact sizes + SHA-256 from the Hugging Face API, resumable HTTPS download, checksum verification |
-| Memory | `data/MemoryPlanner.kt` | RAM estimate per model/quantization, calibrated from measured peaks; low-memory plan |
-| Service | `engine/GenerationService.kt` | foreground service: decode → download → generate → save to Music/ and Download/ |
-| CPU / heat | `engine/ResourceGovernor.kt` | thread count, core selection, low priority, CPU % duty cycle (SIGSTOP/SIGCONT), thermal pause |
-| Analysis | `app/src/main/python/` (Chaquopy) | the scripts' tempo/key/chords/structure analysis, notation, MIDI, cover logic |
-| Engine | `app/src/main/cpp/` | acestep.cpp `ace-synth` / `ace-lm` built with the NDK, packaged as `lib*.so`, run as separate processes |
+| 🖼️ UI | `ui/` (Jetpack Compose) | tracks/templates, mode and prompt, settings, models, log, report dialog; EN + PL |
+| ⚠️ Warning dialog | `ui/PreflightDialog.kt`, `data/Preflight.kt` | download size and source, storage, RAM, heat - before anything starts |
+| 🤖 Models | `data/ModelCatalog.kt`, `ModelDownloader.kt`, `ModelStorage.kt`, `ModelFiles.kt` | exact sizes + SHA-256, resumable HTTPS download, storage locations, move and import |
+| 🧮 Memory | `data/MemoryPlanner.kt` | RAM estimate per model, calibrated from measured peaks; low-memory plan |
+| ⚙️ Service | `engine/GenerationService.kt` | foreground service: decode → download → generate → save |
+| 🌡️ CPU/heat | `engine/ResourceGovernor.kt` | threads, cores, priority, CPU % duty cycle (SIGSTOP/SIGCONT), thermal pause |
+| 🐍 Analysis | `app/src/main/python/` (Chaquopy) | tempo/key/chords/structure, notation, MIDI, cover logic |
+| 🏎️ Engine | `app/src/main/cpp/` | acestep.cpp `ace-synth` / `ace-lm` built with the NDK, run as separate processes |
 
-`app/src/main/python/ace_core.py` is generated from the desktop script:
+`ace_core.py` is generated from the desktop script (the CI checks they stay in sync):
 
 ```bash
 python tools/build_ace_core.py tools/generate_small_pro_ace_android.py app/src/main/python/ace_core.py
 ```
 
-It keeps the analysis/export code and drops what cannot run in an app (installers, PyTorch, Ollama, Demucs, AST);
-Android replacements are in `tools/ace_core_android.py`. `ace_android.py` is the entry point called from Kotlin.
+It keeps the analysis/export code and drops what can't run in an app (installers, PyTorch, Ollama, Demucs, AST);
+Android replacements live in `tools/ace_core_android.py`.
 
-## Data that is downloaded
+### 📥 What gets downloaded
 
-Only GGUF model files, only after the user confirms the warning dialog, only from
-`https://huggingface.co/Serveurperso/ACE-Step-1.5-GGUF` (HTTPS, Hugging Face redirects to its download CDN).
-Typical sizes: music model 1.45 GB (2B Q4_K_M) - 9.3 GB (XL BF16), text encoder 0.78 GB, VAE 0.34 GB,
-optional language model 0.7 - 4.2 GB. The dialog shows the exact sizes read from the server before downloading.
-No executable code is ever downloaded - the engine is inside the APK.
+Only GGUF model files, only after you confirm, only from
+[`huggingface.co/Serveurperso/ACE-Step-1.5-GGUF`](https://huggingface.co/Serveurperso/ACE-Step-1.5-GGUF).
+Typical sizes: music model 1.45 GB (Q4_K_M) - 9.3 GB (XL BF16), text encoder 0.78 GB, VAE 0.34 GB, optional
+language model 0.7 - 4.2 GB. The dialog shows the exact numbers before downloading.
 
-## Android security model
+---
 
-* **Files**: input tracks and templates are opened with the system picker (Storage Access Framework); results are
-  written through MediaStore (default) or into folders the user picked with the system folder picker. No storage
-  permission at all.
-* **Network**: `INTERNET` + `ACCESS_NETWORK_STATE`; HTTPS only, system CAs only (`network_security_config.xml`);
-  warning on metered networks and an optional "Wi-Fi only" switch; SHA-256 check of every model file.
-* **Notifications**: `POST_NOTIFICATIONS` requested at runtime on Android 13+ (optional).
-* **Background work**: foreground service (`dataSync` for downloads, `mediaProcessing` on Android 15+), partial wake
-  lock only while generating; the Android 15 service time limit is handled (`onTimeout`) - progress is checkpointed.
-* **Native code**: executed only from `nativeLibraryDir` (W^X compliant), 16 KB page aligned.
-* **Components**: only the launcher activity is exported; the service is private.
-* **Backup**: only settings; models, checkpoints and results are excluded.
+## 🆘 Troubleshooting
 
-## Where the results are saved
-
-Every track gets its own folder `<track>_<BPM>bpm_<date>_<time>`. Defaults (Settings → Save locations shows them too):
-
-| Files | Default location |
+| Symptom | Cure |
 |---|---|
-| final track | `Music/ACE_music_gen/<track>/final/` |
-| sections, loops/samples, stems, used input slices | `Music/ACE_music_gen/<track>/parts/`, `samples/`, `stems/`, `used_sounds/` |
-| MIDI | `Download/ACE_music_gen/<track>/midi/` |
-| notation (MusicXML, LilyPond, text) | `Download/ACE_music_gen/<track>/notation/` |
-| metadata.json | `Download/ACE_music_gen/<track>/` |
+| 😵 *"This build uses a Java 8 JVM"* | set `JAVA_HOME` to JDK 17 (see [Build](#-building-it-yourself)) |
+| 🚫 *"package conflicts with an existing package"* | different signing key - uninstall once (see [Updating](#-updating)) |
+| 🔥 phone hot as a pancake pan | lower *Max CPU usage*, choose efficiency cores, keep overheating protection on |
+| 🐌 very slow | turbo model, Q4_K_M, priority Normal or higher, performance cores |
+| 💥 engine killed for lack of memory | nothing to do - the app waits and resumes from the checkpoint. Or pick a smaller model 😉 |
+| 💳 *"The storage chosen for the models is not available"* | insert the SD card back or pick another location in **Models** |
+| 🤷 something else | **Log** tab → copy → open an issue 🐛 |
 
-Each of these 8 kinds of files can be sent to a folder of your choice (system folder picker, permission kept until
-you reset it); the files then go to `<your folder>/<track>/`. If the folder is no longer accessible, the default
-location is used and the log says so. Temporary files, checkpoints and logs stay in app-private storage.
+---
 
-## Memory and processor settings
+## 📜 License and credits
 
-* **RAM limit**: "Automatic" (phone RAM minus a reserve for Android) or any value from 0.5 GB up to the phone's RAM -
-  there is no other cap. If the limit is below what the model needs, the app does not stop: it splits the work into
-  shorter passes, lowers the thread count, drops the language model, and when Android still kills the engine for lack
-  of memory it waits for free memory and continues from the last finished pass (checkpoints on disk).
-* **Processor**: thread count, core type (all / efficiency / performance), maximum CPU use in % (duty cycle), low
-  process priority, and overheating protection (pause at moderate / severe / critical thermal status, resume after cooling).
-* **Process priority** (like the Windows Task Manager levels), applied to the engine processes as a Linux nice value:
+* 🙏 **[ACE-Step](https://huggingface.co/ACE-Step/Ace-Step1.5)** - the music model. **[acestep.cpp](https://github.com/ServeurpersoCom/acestep.cpp)** (MIT) and **ggml** - the engine.
+  Models from [Serveurperso/ACE-Step-1.5-GGUF](https://huggingface.co/Serveurperso/ACE-Step-1.5-GGUF). **[Chaquopy](https://chaquo.com/chaquopy/)** - Python on Android.
+  Full list: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+* ⚖️ The license of this project's own code is not chosen yet - add a `LICENSE` file before publishing.
+* 🎼 Cover responsibly: remake music you have the rights to. The app is a tool, not a lawyer 👩‍⚖️.
 
-  | Level | nice | Effect |
-  |---|---|---|
-  | Low | 19 | runs only when the phone is idle |
-  | Below normal (default) | 10 | other apps first, phone stays smooth |
-  | Normal | 0 | same as other apps |
-  | Above normal | -5 | engine first |
-  | High | -10 | engine first, phone may get sluggish |
-  | Realtime | -20 | highest level Android allows an app; true real-time scheduling (SCHED_FIFO) is system-only |
+<div align="center">
 
-  Raising above normal is allowed on most phones; if the system refuses, the engine runs at normal and the Log says so
-  (`[PRIORITY] nice requested -10, active 0`).
+Made with ☕, 🎧 and a slightly warm phone 🔥📱
 
-## Language
-
-The UI is in English and Polish (`res/values`, `res/values-pl`). Settings -> **Language**: phone language (default),
-English or Polski. On Android 13+ this is the system per-app language (also in the phone's Settings > Apps > Language,
-declared in `res/xml/locales_config.xml`); on Android 10-12 the app applies it itself. Engine log lines stay in English.
-
-## Where the models are stored
-
-Models tab -> **Where models are stored**: internal app storage, phone storage app folder (default,
-`Android/data/com.acemusicgen/files/models`) or the app folder on an SD card. The native engine opens the models as
-plain files, and those are the only folders an app can use that way without the "all files access" permission (which
-Google Play restricts), so arbitrary folders are not offered. Switching asks whether to move the downloaded models
-(with progress, cancel and a free-space check; an interrupted move never loses a file). **Import .gguf files** copies
-models you already have (e.g. downloaded on a computer) into the model folder, verified against the official size and
-SHA-256 when known. Models in app folders are removed when the app is uninstalled.
+</div>
