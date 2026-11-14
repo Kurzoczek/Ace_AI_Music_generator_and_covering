@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,6 +18,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      HAS_KEY: ${{ secrets.ACE_KEYSTORE_BASE64 != '' }}
     steps:
       - name: Checkout (with the acestep.cpp submodule)
         uses: actions/checkout@v4
@@ -46,40 +48,18 @@ jobs:
       - name: Build debug APK
         run: ./gradlew --no-daemon assembleDebug
 
-      - name: Upload debug APK
+      - name: Upload debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AceMusicGen-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-  release:
-    # Signed release APK + GitHub Release, only for tags like v1.0.0 and only when the signing secrets exist.
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    permissions:
-      contents: write
-    env:
-      HAS_KEY: ${{ secrets.ACE_KEYSTORE_BASE64 != '' }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Android NDK and CMake
-        run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.2.12479018" "cmake;3.22.1" "platforms;android-35"
-      - name: Signing key from secrets
+      - name: Signing key from secrets (Optional)
         if: env.HAS_KEY == 'true'
         run: echo "${{ secrets.ACE_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.jks"
-      - name: Build release APK
+
+      - name: Build release APK (Optional - if key exists)
         if: env.HAS_KEY == 'true'
         env:
           ACE_KEYSTORE_FILE: ${{ runner.temp }}/release.jks
@@ -87,12 +67,16 @@ jobs:
           ACE_KEY_ALIAS: ${{ secrets.ACE_KEY_ALIAS }}
           ACE_KEY_PASSWORD: ${{ secrets.ACE_KEY_PASSWORD }}
         run: ./gradlew --no-daemon assembleRelease
+
       - name: Publish GitHub Release
-        if: env.HAS_KEY == 'true'
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/*.apk
+          tag_name: v1.0.${{ github.run_number }}
+          name: "AceMusicGen v1.0.${{ github.run_number }}"
+          files: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
           generate_release_notes: true
-      - name: No signing key
-        if: env.HAS_KEY != 'true'
-        run: echo "::warning::Release skipped - add the ACE_KEYSTORE_* secrets to publish signed APKs (see README)."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
