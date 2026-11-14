@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 10-11: back up only the settings. -->
+<!-- Android 10-11: back up only the settings. With an <include>, everything not included (models, checkpoints,
+     temporary files) is left out automatically. -->
 <full-backup-content>
     <include domain="sharedpref" path="." />
-    <exclude domain="file" path="." />
-    <exclude domain="external" path="." />
 </full-backup-content>
