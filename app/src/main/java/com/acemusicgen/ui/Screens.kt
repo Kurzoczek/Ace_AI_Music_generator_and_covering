@@ -17,7 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AlertDialog
@@ -81,7 +81,7 @@ fun AppRoot(vm: MainViewModel) {
             Triple(R.string.tab_generate, Icons.Default.LibraryMusic, 0),
             Triple(R.string.tab_settings, Icons.Default.Settings, 1),
             Triple(R.string.tab_models, Icons.Default.Storage, 2),
-            Triple(R.string.tab_log, Icons.Default.Notes, 3),
+            Triple(R.string.tab_log, Icons.AutoMirrored.Filled.Notes, 3),
         )
         Scaffold(bottomBar = {
             NavigationBar {
