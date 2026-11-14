@@ -10,8 +10,9 @@ val aceArmArch: String = (project.findProperty("aceArmArch") as String?) ?: "arm
 val aceReportEmail: String = (project.findProperty("aceReportEmail") as String?)?.trim() ?: ""
 val aceReportUrl: String = (project.findProperty("aceReportUrl") as String?)?.trim()
     ?: "https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/issues/new"
-// Google Play needs a higher versionCode for every upload: CI builds use the run number, local builds 2.
-val aceVersionCode: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.plus(100) ?: 2
+// Every upload/installation needs a higher versionCode than the installed one. CI builds (debug, import and release
+// workflows alike) use the minutes since 2026-01-01, which only grows; local builds use 2.
+val aceVersionCode: Int = if (System.getenv("CI") != null) ((System.currentTimeMillis() / 1000 - 1_767_225_600L) / 60).toInt() else 2
 
 android {
     namespace = "com.acemusicgen"
@@ -23,7 +24,7 @@ android {
         minSdk = 29                 // Android 10: scoped storage (MediaStore), FGS types, thermal API
         targetSdk = 36             // Google Play: new apps and updates must target Android 16 (API 36)
         versionCode = aceVersionCode
-        versionName = "1.1.0"
+        versionName = (project.findProperty("aceVersionName") as String?)?.removePrefix("v") ?: "1.1.0"
         buildConfigField("String", "REPORT_EMAIL", "\"$aceReportEmail\"")
         buildConfigField("String", "REPORT_URL", "\"$aceReportUrl\"")
 
@@ -77,7 +78,11 @@ android {
 
     buildTypes {
         release {
-            signingConfigs.findByName("release")?.let { signingConfig = it }
+            // Release key from secrets (ACE_KEYSTORE_*); without it the fixed debug key from secrets, so a release APK
+            // still installs over the debug builds (and the other way round). Never unsigned in CI.
+            (signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug").takeIf { System.getenv("ACE_DEBUG_KEYSTORE_FILE") != null })
+                ?.let { signingConfig = it }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

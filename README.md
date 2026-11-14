@@ -51,8 +51,11 @@ If Chaquopy reports that no `numpy` wheel matches Python 3.12, set `version = "3
 
 * every push to `main` and every pull request: builds the debug APK (downloadable from the run's *Artifacts*) and
   checks that `app/src/main/python/ace_core.py` matches the desktop script;
-* a tag `v*` (e.g. `git tag v1.0.0 && git push --tags`): builds a signed release APK and publishes a GitHub Release -
-  only when these repository secrets exist (*Settings → Secrets and variables → Actions*):
+
+`.github/workflows/release.yml` - **Actions → Release → Run workflow**, enter a version (e.g. `1.1.0`), or push a tag
+`v1.1.0`: builds the signed release APK and AAB (Google Play) and publishes a GitHub Release `v1.1.0` with both files.
+It signs with the release key from these secrets (*Settings → Secrets and variables → Actions*) and, when they are
+missing, with the debug key (`ACE_DEBUG_KEYSTORE_*`), so the release APK installs over the debug builds:
 
 | Secret | Value |
 |---|---|
@@ -102,9 +105,10 @@ Builds made before this key was introduced must be uninstalled once; to keep the
 ## Google Play
 
 * `targetSdk` / `compileSdk` 36 (Android 16), as Google Play requires for new apps and updates.
-* `versionCode` = GitHub run number + 100 in CI, so every uploaded build is higher than the previous one.
-* Signed release tags (`v*`) also build an **AAB** (`app-release.aab`) - the format Google Play accepts - attached to
-  the GitHub Release and to the workflow artifacts.
+* `versionCode` in CI = minutes since 2026-01-01, so every build (debug, import, release) is higher than the previous
+  one and installs as an update.
+* The Release workflow also builds an **AAB** - the format Google Play accepts - attached to the GitHub Release. For
+  Google Play use the release key (`ACE_KEYSTORE_*`), not the debug key.
 * **Report content** button on the results (Google Play AI-Generated Content policy). Set `aceReportEmail=` in
   `gradle.properties` to receive reports by e-mail; when empty, reports open a new GitHub issue in this repository
   (`aceReportUrl`).
