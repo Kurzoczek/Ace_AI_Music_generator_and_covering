@@ -20,7 +20,6 @@
 | What | Where | For whom |
 |---|---|---|
 | 📱 **APK (install on your phone)** | [**Releases → latest**](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/releases/latest) → `AceMusicGen-vX.Y.Z.apk` | normal humans 🙂 |
-| 🏪 **AAB (Google Play bundle)** | same release → `AceMusicGen-vX.Y.Z.aab` | future Play Store hero 🦸 |
 | 🧪 **Fresh test build** | [Actions](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/actions) → newest green run → *Artifacts* → `AceMusicGen-debug` | the impatient ones ⚡ |
 | 🧑‍💻 **Source code** | `git clone --recurse-submodules https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering.git` | builders and tinkerers 🔧 |
 | 🗜️ **Source as ZIP** | [main.zip](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/archive/refs/heads/main.zip) ⚠️ *without the engine submodule - see [Build](#-building-it-yourself)* | read-only browsing 👀 |
@@ -225,7 +224,7 @@ The SDK location goes into `local.properties` (`sdk.dir=...`) or the `ANDROID_HO
 |---|---|---|
 | 🧪 `android.yml` | every push to `main`, every pull request | debug APK in *Artifacts* + a check that the Python core matches the desktop script |
 | 📦 `import-zip.yml` | you upload a project ZIP | unpacks, commits, deletes the ZIP and builds the APK - all in one run |
-| 🏷️ `release.yml` | **Run workflow** with a version, or a `v*` tag | signed APK + AAB published as a GitHub Release |
+| 🏷️ `release.yml` | **Run workflow** with a version, or a `v*` tag | signed APK published as a GitHub Release |
 
 ### 📱 Updating the repository from a phone (ZIP import)
 
@@ -242,7 +241,7 @@ a warning to upload by hand). Files deleted from the project are not deleted fro
 ### 🚀 Making a release
 
 **Actions → Release → Run workflow** → type a version, e.g. `1.1.1` → **Run workflow** → 🍿. You get a GitHub Release
-`v1.1.1` with the APK and the AAB.
+`v1.1.1` with the APK.
 
 ### 🔐 Signing keys (repository Secrets)
 
@@ -276,7 +275,6 @@ can't update the installed app. No key is ever stored in the repository.
 ## 🏪 Google Play readiness
 
 * 🎯 `targetSdk` / `compileSdk` **36** (Android 16), as Google Play requires.
-* 📦 **AAB** built by the Release workflow.
 * 🚩 **Report content** button (AI-Generated Content policy).
 * 📜 [PRIVACY.md](PRIVACY.md) - fill in the name and contact e-mail and publish it at a **public** URL.
 * 📝 Play Console: declare foreground services `dataSync` and `mediaProcessing` (with a short screen recording each),

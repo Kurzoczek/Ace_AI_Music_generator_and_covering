@@ -20,7 +20,6 @@
 | Co | Gdzie | Dla kogo |
 |---|---|---|
 | 📱 **APK (instalacja na telefonie)** | [**Releases → najnowsze**](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/releases/latest) → `AceMusicGen-vX.Y.Z.apk` | dla zwykłych ludzi 🙂 |
-| 🏪 **AAB (paczka do Sklepu Play)** | to samo wydanie → `AceMusicGen-vX.Y.Z.aab` | dla przyszłej gwiazdy Sklepu Play 🦸 |
 | 🧪 **Świeży build testowy** | [Actions](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/actions) → najnowszy zielony przebieg → *Artifacts* → `AceMusicGen-debug` | dla niecierpliwych ⚡ |
 | 🧑‍💻 **Kod źródłowy** | `git clone --recurse-submodules https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering.git` | dla majsterkowiczów 🔧 |
 | 🗜️ **Źródła jako ZIP** | [main.zip](https://github.com/Kurzoczek/Ace_AI_Music_generator_and_covering/archive/refs/heads/main.zip) ⚠️ *bez silnika (submodułu) - patrz [Budowanie](#-budowanie-samemu)* | do przeglądania 👀 |
@@ -225,7 +224,7 @@ Lokalizacja SDK idzie do `local.properties` (`sdk.dir=...`) albo zmiennej `ANDRO
 |---|---|---|
 | 🧪 `android.yml` | każdy push do `main`, każdy pull request | APK debug w *Artifacts* + sprawdzenie, że rdzeń Pythona zgadza się ze skryptem desktopowym |
 | 📦 `import-zip.yml` | wgrywasz ZIP z projektem | rozpakowuje, robi commit, usuwa ZIP i buduje APK - w jednym przebiegu |
-| 🏷️ `release.yml` | **Run workflow** z numerem wersji albo tag `v*` | podpisane APK + AAB opublikowane jako wydanie na GitHubie |
+| 🏷️ `release.yml` | **Run workflow** z numerem wersji albo tag `v*` | podpisane APK opublikowane jako wydanie na GitHubie |
 
 ### 📱 Aktualizacja repozytorium z telefonu (import ZIP)
 
@@ -242,7 +241,7 @@ wypisywane jako ostrzeżenie do ręcznego wgrania). Pliki usunięte z projektu n
 ### 🚀 Robienie wydania
 
 **Actions → Release → Run workflow** → wpisz wersję, np. `1.1.1` → **Run workflow** → 🍿. Powstaje wydanie
-`v1.1.1` z plikami APK i AAB.
+`v1.1.1` z plikiem APK.
 
 ### 🔐 Klucze podpisu (sekrety repozytorium)
 
@@ -276,7 +275,6 @@ zaktualizuje zainstalowanej aplikacji. W repozytorium nie ma żadnego klucza.
 ## 🏪 Gotowość do Sklepu Play
 
 * 🎯 `targetSdk` / `compileSdk` **36** (Android 16), zgodnie z wymogami Google Play.
-* 📦 **AAB** budowane przez workflow Release.
 * 🚩 Przycisk **Zgłoś treść** (zasady dotyczące treści generowanych przez AI).
 * 📜 [PRIVACY.md](PRIVACY.md) - uzupełnij imię i e-mail kontaktowy i opublikuj pod **publicznym** adresem.
 * 📝 Play Console: zadeklaruj usługi `dataSync` i `mediaProcessing` (każdą z krótkim nagraniem ekranu), bezpieczeństwo
