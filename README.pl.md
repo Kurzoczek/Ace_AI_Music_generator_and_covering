@@ -256,6 +256,9 @@ wypisywane jako ostrzeżenie do ręcznego wgrania). Pliki usunięte z projektu n
 **Actions → Release → Run workflow** → wpisz wersję, np. `1.1.1` → **Run workflow** → 🍿. Powstaje wydanie
 `v1.1.1` z plikiem APK.
 
+📝 Opis wydania pochodzi z [CHANGELOG.md](CHANGELOG.md): z sekcji tej wersji albo z **Unreleased**, jeśli jej jeszcze
+nie ma (wtedy staje się opisem wersji, którą wydajesz). Każda paczka z aktualizacją ma tam już wpisane swoje zmiany.
+
 ### 🔐 Klucze podpisu (sekrety repozytorium)
 
 *Settings → Secrets and variables → Actions*:

@@ -255,6 +255,10 @@ a warning to upload by hand). Files deleted from the project are not deleted fro
 **Actions → Release → Run workflow** → type a version, e.g. `1.1.1` → **Run workflow** → 🍿. You get a GitHub Release
 `v1.1.1` with the APK.
 
+📝 The release description is taken from [CHANGELOG.md](CHANGELOG.md): the section of that version, or **Unreleased**
+when there is none yet (it then becomes the notes of whatever version you release). Every update ZIP comes with its
+changes already written there.
+
 ### 🔐 Signing keys (repository Secrets)
 
 *Settings → Secrets and variables → Actions*:
