@@ -47,7 +47,7 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "tag=v$v" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0        # full history and tags: release notes fall back to the commits since the last tag
