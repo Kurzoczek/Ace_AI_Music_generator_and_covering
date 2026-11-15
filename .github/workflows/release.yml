@@ -106,7 +106,7 @@ jobs:
         run: rm -f "$RUNNER_TEMP/release.jks" "$RUNNER_TEMP/ace-debug.p12"
 
       - name: Publish GitHub Release (APK)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.v.outputs.tag }}
           target_commitish: ${{ github.sha }}
@@ -116,7 +116,7 @@ jobs:
           files: app/build/outputs/apk/release/*.apk
 
       - name: Private draft with the Google Play bundle (AAB)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           tag_name: ${{ steps.v.outputs.tag }}-play
