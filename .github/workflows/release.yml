@@ -1,8 +1,13 @@
 name: Release
 
-# Builds a signed release APK + AAB (Google Play) and publishes a GitHub Release.
+# Builds a signed release APK + AAB (Google Play).
+#   APK -> GitHub Release vX.Y.Z (visible to everyone who can see the repository)
+#   AAB -> DRAFT release vX.Y.Z-play (drafts are visible only to people with write access to the repository,
+#          even when the repository is public; it is never published, the AAB is only for uploading to Google Play)
 # From the phone: Actions -> Release -> Run workflow -> enter the version (e.g. 1.1.0) -> Run workflow.
 # Also runs when a tag like v1.1.0 is pushed.
+# Description of the release: the section of CHANGELOG.md for this version, or its "Unreleased" section
+# (tools/release_notes.py); without either, the commits since the previous tag.
 #
 # Signing: the release key from the ACE_KEYSTORE_* secrets if they exist (use this one for Google Play);
 # otherwise the debug key from the ACE_DEBUG_KEYSTORE_* secrets, so the APK installs over the debug builds.
@@ -45,6 +50,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0        # full history and tags: release notes fall back to the commits since the last tag
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          python3 tools/release_notes.py "${{ steps.v.outputs.version }}" > "$RUNNER_TEMP/notes.md"
+          echo "----- release notes -----"; cat "$RUNNER_TEMP/notes.md"
 
       - uses: actions/setup-java@v4
         with:
@@ -94,13 +105,24 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks" "$RUNNER_TEMP/ace-debug.p12"
 
-      - name: Publish GitHub Release
+      - name: Publish GitHub Release (APK)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.v.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: ${{ steps.v.outputs.tag }}
-          generate_release_notes: true
-          files: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
+          body_path: ${{ runner.temp }}/notes.md
+          generate_release_notes: true     # adds the "Full Changelog" comparison link under the notes
+          files: app/build/outputs/apk/release/*.apk
+
+      - name: Private draft with the Google Play bundle (AAB)
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          tag_name: ${{ steps.v.outputs.tag }}-play
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.v.outputs.tag }} - Google Play bundle (private draft, do not publish)
+          body: |
+            Draft = visible only to people with write access to this repository.
+            Download the .aab and upload it in Google Play Console. Do not publish this draft.
+          files: app/build/outputs/bundle/release/*.aab
