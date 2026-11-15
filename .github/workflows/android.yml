@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - name: Checkout (with the acestep.cpp submodule)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           ref: ${{ inputs.ref || github.ref }}
