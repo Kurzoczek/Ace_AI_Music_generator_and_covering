@@ -23,6 +23,10 @@ import com.acemusicgen.data.ModelCatalog
 import com.acemusicgen.data.ModelDownloader
 import com.acemusicgen.data.ModelFiles
 import com.acemusicgen.data.ModelStorage
+import com.acemusicgen.data.DumpType
+import com.acemusicgen.data.SessionStore
+import com.acemusicgen.diag.Diagnostics
+import com.acemusicgen.diag.StateDump
 import com.acemusicgen.data.Preflight
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
@@ -68,8 +72,26 @@ class GenerationService : LifecycleService() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var notificationCollector = false
 
+    override fun onCreate() {
+        super.onCreate()
+        Diagnostics.event("SERVICE", "generation service created")
+    }
+
+    override fun onDestroy() {
+        Diagnostics.event("SERVICE", "generation service destroyed (job ${JobRepository.state.value.phase})")
+        super.onDestroy()
+    }
+
+    /** The user swiped the app away from the recent apps list - the service keeps running, but note it. */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Diagnostics.event("SYSTEM", "app removed from the recent apps list while the job is ${JobRepository.state.value.phase}")
+        Diagnostics.snapshot("app removed from recent apps")
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        if (intent?.action != null) Diagnostics.event("SERVICE", "command ${intent.action?.substringAfterLast('.')}")
         when (intent?.action) {
             ACTION_START -> startJob()
             ACTION_STOP -> {
@@ -78,11 +100,13 @@ class GenerationService : LifecycleService() {
                 JobRepository.update { it.copy(status = getString(R.string.status_stopping), userPaused = false) }
             }
             ACTION_PAUSE -> {
+                Diagnostics.event("USER", "paused by the user")
                 governor?.userPaused = true
                 JobRepository.update { it.copy(userPaused = true) }
                 updateNotification()
             }
             ACTION_RESUME -> {
+                Diagnostics.event("USER", "resumed by the user")
                 governor?.userPaused = false
                 JobRepository.update { it.copy(userPaused = false) }
                 updateNotification()
@@ -114,6 +138,10 @@ class GenerationService : LifecycleService() {
         if (job?.isActive == true) return
         val request = JobRepository.pending ?: run { stopSelf(); return }
         JobRepository.reset()
+        SessionStore.markRunning(this, request)
+        Diagnostics.taskStart("job", "${request.inputs.size} input(s): ${request.inputs.joinToString { it.name }}; " +
+            "mode ${request.settings.mode}, model ${request.settings.model} ${request.settings.quant}, priority ${request.settings.priority}")
+        Diagnostics.snapshot("job start")
         JobRepository.update { it.copy(phase = Phase.PREPARING, status = getString(R.string.status_preparing)) }
         goForeground(processing = false)
         if (!notificationCollector) {
@@ -128,9 +156,18 @@ class GenerationService : LifecycleService() {
             } catch (e: Exception) {
                 JobRepository.log("[ERROR] ${e.javaClass.simpleName}: ${e.message}")
                 JobRepository.update { it.copy(phase = Phase.FAILED, error = e.message ?: e.javaClass.simpleName) }
+                Diagnostics.error("job", e)
+                val st = (application as AceApp).settings.state.value
+                if (st.dumpType != DumpType.NONE && st.dumpOnError) {
+                    StateDump.requestAsync(this@GenerationService, "error", "${e.javaClass.simpleName}: ${e.message}")
+                }
             } finally {
                 governor?.stop()
                 wakeLock?.let { if (it.isHeld) it.release() }
+                Diagnostics.taskEnd("job", JobRepository.state.value.phase.name)
+                Diagnostics.snapshot("job end (${JobRepository.state.value.phase})")
+                Diagnostics.syncNow()
+                SessionStore.markEnded(this@GenerationService)
                 withContext(Dispatchers.Main) { finish() }
             }
         }
@@ -150,9 +187,18 @@ class GenerationService : LifecycleService() {
             JobRepository.update { it.copy(status = getString(R.string.status_decoding, i + 1, request.inputs.size, t.name), progress = -1f) }
             val wav = File(dirs.getValue("inputs"), "in_${hash(t.uri.toString())}.wav")
             if (!wav.exists()) {
+                Diagnostics.taskStart("decode input ${i + 1}", t.name)
                 val tmp = File(wav.path + ".tmp")
-                AudioDecoder.decodeToWav(this, t.uri, tmp) { JobRepository.cancelRequested }
+                try {
+                    AudioDecoder.decodeToWav(this, t.uri, tmp) { JobRepository.cancelRequested }
+                } catch (e: Exception) {
+                    Diagnostics.taskEnd("decode input ${i + 1}", "failed: ${e.message}")
+                    throw e
+                }
                 tmp.renameTo(wav)
+                Diagnostics.taskEnd("decode input ${i + 1}", "${wav.length() / 1024} kB WAV")
+            } else {
+                Diagnostics.event("TASK", "decode input ${i + 1} skipped - already decoded earlier (${t.name})")
             }
             inputs.put(JSONObject().put("wav", wav.path).put("name", t.name))
         }
@@ -176,9 +222,11 @@ class GenerationService : LifecycleService() {
             if (!net.connected) throw IllegalStateException(getString(R.string.error_offline))
             if (s.wifiOnly && net.metered) throw IllegalStateException(getString(R.string.error_wifi_only))
             JobRepository.update { it.copy(phase = Phase.DOWNLOADING) }
+            SessionStore.updateStatus(this, "downloading models")
             val downloader = ModelDownloader(models)
             var doneBefore = 0L
             missing.forEach { f ->
+                Diagnostics.taskStart("download ${f.name}", "${f.sizeBytes / 1_000_000} MB")
                 downloader.download(f, { JobRepository.cancelRequested }) { done, total ->
                     val all = doneBefore + done
                     JobRepository.update {
@@ -188,6 +236,7 @@ class GenerationService : LifecycleService() {
                     updateNotification()
                 }
                 doneBefore += f.sizeBytes
+                Diagnostics.taskEnd("download ${f.name}")
                 JobRepository.log("[DOWNLOAD] ${f.name}: OK")
             }
         }
@@ -195,6 +244,7 @@ class GenerationService : LifecycleService() {
         // 3. generate
         check()
         JobRepository.update { it.copy(phase = Phase.GENERATING, progress = -1f, status = getString(R.string.status_generating)) }
+        SessionStore.updateStatus(this, "generating")
         withContext(Dispatchers.Main) { goForeground(processing = true) }
         val planner = MemoryPlanner(this)
         val duration = Preflight.generatedDurationSec(s, request.inputs.map { it.durationSec })
@@ -237,7 +287,12 @@ class GenerationService : LifecycleService() {
         }
         if (!Python.isStarted()) Python.start(AndroidPlatform(this))
         val bridge = PythonBridge(this, s, gov, planner, plan.limitMb)
-        val result = JSONObject(Python.getInstance().getModule("ace_android").callAttr("run", config.toString(), bridge).toString())
+        Diagnostics.taskStart("generation", "threads ${plan.threads}, RAM limit ${plan.limitMb} MB")
+        val result = try {
+            JSONObject(Python.getInstance().getModule("ace_android").callAttr("run", config.toString(), bridge).toString())
+        } finally {
+            Diagnostics.taskEnd("generation")
+        }
         gov.stop()
 
         if (result.optBoolean("cancelled")) {
@@ -251,6 +306,8 @@ class GenerationService : LifecycleService() {
 
         // 4. publish the results (MediaStore: Music/ and Download/)
         JobRepository.update { it.copy(phase = Phase.EXPORTING, status = getString(R.string.status_saving), progress = -1f) }
+        SessionStore.updateStatus(this, "saving results")
+        Diagnostics.taskStart("saving results")
         val locations = mutableListOf<String>()
         val results = result.getJSONArray("results")
         for (i in 0 until results.length()) {
@@ -264,6 +321,7 @@ class GenerationService : LifecycleService() {
             }
             exported.locations.forEach { JobRepository.log("[SAVE] $it") }
         }
+        Diagnostics.taskEnd("saving results", "${locations.size} location(s)")
         JobRepository.update { it.copy(phase = Phase.DONE, progress = 1f, status = getString(R.string.status_done), results = locations) }
     }
 
@@ -276,6 +334,8 @@ class GenerationService : LifecycleService() {
 
     /** Android 15+: the system ends long foreground services. Progress is checkpointed - the user can start again. */
     override fun onTimeout(startId: Int, fgsType: Int) {
+        Diagnostics.event("SYSTEM", "Android ended the foreground service: daily time limit for service type $fgsType reached")
+        Diagnostics.snapshot("foreground service time limit")
         JobRepository.cancelRequested = true
         JobRepository.update { it.copy(phase = Phase.TIMED_OUT, status = getString(R.string.status_timeout)) }
         governor?.stop()

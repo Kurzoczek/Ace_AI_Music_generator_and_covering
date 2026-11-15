@@ -15,6 +15,18 @@ enum class CoreSet { ALL, EFFICIENCY, PERFORMANCE }
  * phones (the system allows nice down to -20 for app processes) but may be refused, then the engine runs at normal.
  * True real-time scheduling (SCHED_FIFO) is reserved for the system on Android, so REALTIME = the highest nice value.
  */
+/**
+ * What a state dump contains, named after the Windows "Write debugging information" options.
+ * Android does not let an app dump the kernel or other processes, so the levels are the closest equivalents:
+ *  SMALL     - like a Windows small memory dump: app/job state, settings, device state, log, Java thread stacks;
+ *  EXTENDED  - like a kernel memory dump: SMALL + Python thread stacks, /proc memory maps of the app and the engine,
+ *              system memory/pressure, all thermal sensors, exit reasons with system crash/ANR traces, work files;
+ *  FULL      - like a complete memory dump: EXTENDED + Java heap dump (.hprof). The engine's model memory (GBs of
+ *              weights) is not dumped - it is the model file itself;
+ *  AUTOMATIC - EXTENDED for crashes, unexpected ends and manual dumps, SMALL for errors and pauses.
+ */
+enum class DumpType { NONE, SMALL, EXTENDED, FULL, AUTOMATIC }
+
 enum class Priority(val nice: Int) {
     LOW(19), BELOW_NORMAL(10), NORMAL(0), ABOVE_NORMAL(-5), HIGH(-10), REALTIME(-20);
     val raised: Boolean get() = nice < 0
@@ -71,6 +83,13 @@ data class AppSettings(
     val outputFolders: Map<String, String> = emptyMap(),
     /** Where models are stored: ModelStorage.APP, PHONE (default) or "sd:<uuid>". */
     val modelsLocation: String = ModelStorage.DEFAULT,
+    // --- diagnostics (folders are kept in outputFolders under DiagFolders.LOGS / DiagFolders.DUMPS)
+    val diagLogs: Boolean = false,                  // copy the diagnostic log to the "app logs" folder
+    val dumpType: DumpType = DumpType.NONE,
+    val dumpOnError: Boolean = true,                // when a job fails
+    val dumpOnUnexpectedEnd: Boolean = true,        // app crash, or the system killed the app during a job
+    val dumpOnPause: Boolean = false,               // overheating pause, waiting for memory, critical memory warning
+    val dumpKeep: Int = 5,                          // dumps kept in the folder (1 = always overwrite, like Windows)
 ) {
     fun effectiveSteps(): Int = steps ?: if ("turbo" in model) 8 else 32
 
@@ -154,6 +173,8 @@ data class AppSettings(
         put("thermalPauseLevel", thermalPauseLevel); put("wifiOnly", wifiOnly)
         put("outputFolders", JSONObject(outputFolders as Map<*, *>))
         put("modelsLocation", modelsLocation)
+        put("diagLogs", diagLogs); put("dumpType", dumpType.name); put("dumpOnError", dumpOnError)
+        put("dumpOnUnexpectedEnd", dumpOnUnexpectedEnd); put("dumpOnPause", dumpOnPause); put("dumpKeep", dumpKeep)
     }
 
     companion object {
@@ -189,6 +210,12 @@ data class AppSettings(
                 thermalPauseLevel = o.optInt("thermalPauseLevel", d.thermalPauseLevel), wifiOnly = o.optBoolean("wifiOnly", d.wifiOnly),
                 outputFolders = o.optJSONObject("outputFolders")?.let { f -> f.keys().asSequence().associateWith { f.getString(it) } } ?: emptyMap(),
                 modelsLocation = o.optString("modelsLocation", d.modelsLocation),
+                diagLogs = o.optBoolean("diagLogs", d.diagLogs),
+                dumpType = runCatching { DumpType.valueOf(o.optString("dumpType", d.dumpType.name)) }.getOrDefault(d.dumpType),
+                dumpOnError = o.optBoolean("dumpOnError", d.dumpOnError),
+                dumpOnUnexpectedEnd = o.optBoolean("dumpOnUnexpectedEnd", d.dumpOnUnexpectedEnd),
+                dumpOnPause = o.optBoolean("dumpOnPause", d.dumpOnPause),
+                dumpKeep = o.optInt("dumpKeep", d.dumpKeep).coerceIn(1, 50),
             )
         }
     }

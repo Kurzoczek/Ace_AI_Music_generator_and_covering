@@ -5,6 +5,8 @@ import com.acemusicgen.R
 import com.acemusicgen.data.AppSettings
 import com.acemusicgen.data.DeviceInfo
 import com.acemusicgen.data.MemoryPlanner
+import com.acemusicgen.diag.Diagnostics
+import com.acemusicgen.diag.SystemProbe
 
 /**
  * Object handed to Python (ace_android.run). Python calls these methods by name, so they must stay public
@@ -25,11 +27,17 @@ class PythonBridge(
 
     fun isCancelled(): Boolean = JobRepository.cancelRequested
 
-    fun onNativeStart(pid: Int, stage: String) = governor.register(pid, stage)
+    fun onNativeStart(pid: Int, stage: String) {
+        governor.register(pid, stage)
+        Diagnostics.event("ENGINE", "process $pid started: $stage")
+    }
 
     fun onNativeEnd(pid: Int, code: Int, peakRssKb: Long, stage: String, durationSec: Double, threads: Int) {
         governor.unregister(pid)
         val peakMb = peakRssKb / 1024
+        Diagnostics.event("ENGINE", "process $pid ended: $stage, exit ${if (code < 0) SystemProbe.signalName(code) else "code $code"}, " +
+            "peak $peakMb MB, ${Diagnostics.duration((durationSec * 1000).toLong())}, $threads thread(s)")
+        if (code != 0) Diagnostics.snapshot("engine process ended with ${if (code < 0) SystemProbe.signalName(code) else "code $code"}")
         if (code == 0) {
             planner.calibrate(settings, stage, peakRssKb, durationSec)
             if (peakMb > ramLimitMb) {
@@ -45,6 +53,8 @@ class PythonBridge(
 
     /** Blocks the Python thread until enough RAM is free or the time is up (or the user cancels). */
     fun waitForMemory(neededMb: Int, maxWaitSec: Int): Boolean {
+        Diagnostics.event("MEMORY", "engine waits up to $maxWaitSec s for $neededMb MB of free RAM")
+        Diagnostics.pauseEvent("waiting for $neededMb MB of free memory")
         val deadline = System.currentTimeMillis() + maxWaitSec * 1000L
         while (true) {
             if (isCancelled()) return false

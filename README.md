@@ -126,6 +126,18 @@ Before anything heavy starts, the app tells you honestly:
 > 🤓 *Why not any folder?* The C++ engine reads models directly as files, and without the "access all files"
 > permission (which Google Play almost never grants) Android allows that only in the app's own folders.
 
+### 🩺 Diagnostics (for when something goes wrong)
+
+* 📝 **Log files** (Settings → Diagnostics): everything from the Log tab with exact times, plus start/end and duration
+  of every task and file, errors, system events (screen, charger, battery saver, doze, overheating, memory warnings,
+  the app being ended), engine processes with their exit reason, and **every 10 minutes** temperatures, CPU speeds,
+  memory and power state. Saved to `Download/ACE_music_gen/app logs` or a folder you pick.
+* 🧯 **State dumps, Windows-style**: (none) / small / extended (≈ kernel dump) / complete (with Java heap `.hprof`) /
+  automatic - written on crashes, unexpected ends, errors or pauses, plus a **Dump now** button. One ZIP per dump,
+  in `Download/ACE_music_gen/state dumps` or your folder; keep 1 (overwrite) to 20.
+* 🔁 **Nothing is lost when Android kills the app**: picked tracks are remembered, and an interrupted job shows a
+  **Resume** card (with the reason Android gave) that continues from the last finished pass.
+
 ### 🌍 And the cherries on top 🍒
 
 * 🇬🇧🇵🇱 **English and Polish UI**, switchable in Settings → Language (on Android 13+ also in the phone's app settings).

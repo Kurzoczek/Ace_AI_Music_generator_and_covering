@@ -679,7 +679,17 @@ def run(config_json, bridge):
         for i, item in enumerate(inputs, 1):
             whole_setting = bool(C.ACE_WHOLE_TRACK) or C.ACE_MODE == "cover"
             C._ACE_WHOLE = whole_setting
-            results.append(process_file(engine, cfg, item, templates, i, len(inputs)))
+            name = item.get("name", "?") if isinstance(item, dict) else str(item)
+            t_file = time.time()
+            print(f"[TASK] FILE START {i}/{len(inputs)}: {name} at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+            try:
+                results.append(process_file(engine, cfg, item, templates, i, len(inputs)))
+                print(f"[TASK] FILE END {i}/{len(inputs)}: {name} at {time.strftime('%Y-%m-%d %H:%M:%S')} "
+                      f"after {time.time() - t_file:.0f} s (ok)")
+            except BaseException as e:
+                print(f"[TASK] FILE END {i}/{len(inputs)}: {name} at {time.strftime('%Y-%m-%d %H:%M:%S')} "
+                      f"after {time.time() - t_file:.0f} s ({type(e).__name__})")
+                raise
         C.report_progress(1.0, "Done")
         return json.dumps({"ok": True, "results": results})
     except C.Cancelled:
@@ -691,3 +701,15 @@ def run(config_json, bridge):
         return json.dumps({"ok": False, "error": f"{type(e).__name__}: {e}", "results": results})
     finally:
         sys.stdout, sys.stderr = old_out, old_err
+
+
+def dump_threads():
+    """Stacks of every Python thread, for state dumps (called from Kotlin on another thread)."""
+    import threading
+    names = {t.ident: t.name for t in threading.enumerate()}
+    out = []
+    for tid, frame in sys._current_frames().items():
+        out.append(f"--- Python thread {names.get(tid, '?')} (id {tid})\n")
+        out.extend(traceback.format_stack(frame))
+        out.append("\n")
+    return "".join(out)

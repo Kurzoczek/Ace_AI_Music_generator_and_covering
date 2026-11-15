@@ -78,7 +78,7 @@ object ResultExporter {
         }
     }
 
-    private fun treeDir(resolver: ContentResolver, treeUri: Uri, segments: List<String>, cache: HashMap<String, Uri>): Uri {
+    internal fun treeDir(resolver: ContentResolver, treeUri: Uri, segments: List<String>, cache: HashMap<String, Uri>): Uri {
         var dir = DocumentsContract.buildDocumentUriUsingTree(treeUri, DocumentsContract.getTreeDocumentId(treeUri))
         var key = treeUri.toString()
         for (seg in segments) {
@@ -92,7 +92,7 @@ object ResultExporter {
         return dir
     }
 
-    private fun findChildDir(resolver: ContentResolver, treeUri: Uri, parent: Uri, name: String): Uri? {
+    internal fun findChildDir(resolver: ContentResolver, treeUri: Uri, parent: Uri, name: String): Uri? {
         val children = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, DocumentsContract.getDocumentId(parent))
         resolver.query(children, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_MIME_TYPE), null, null, null)?.use { c ->

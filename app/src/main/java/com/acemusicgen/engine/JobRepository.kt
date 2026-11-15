@@ -43,7 +43,10 @@ object JobRepository {
 
     fun update(transform: (JobState) -> JobState) = _state.update(transform)
 
-    fun log(line: String) = _state.update { s -> s.copy(log = (s.log + line).takeLast(MAX_LOG)) }
+    fun log(line: String) {
+        _state.update { s -> s.copy(log = (s.log + line).takeLast(MAX_LOG)) }
+        com.acemusicgen.diag.Diagnostics.log(line)
+    }
 
     fun reset() {
         cancelRequested = false

@@ -18,6 +18,13 @@ import com.acemusicgen.data.ModelStorage
 import com.acemusicgen.R
 import com.acemusicgen.engine.Phase
 import com.acemusicgen.data.Preflight
+import com.acemusicgen.data.DumpType
+import com.acemusicgen.data.SessionStore
+import com.acemusicgen.diag.DiagExport
+import com.acemusicgen.diag.DiagFolder
+import com.acemusicgen.diag.Diagnostics
+import com.acemusicgen.diag.StateDump
+import com.acemusicgen.diag.SystemProbe
 import com.acemusicgen.data.PreflightReport
 import com.acemusicgen.engine.GenerationService
 import com.acemusicgen.engine.InputTrack
@@ -53,6 +60,94 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun update(transform: (AppSettings) -> AppSettings) = store.update(transform)
 
+    // ---------- picked tracks survive the app being killed (saved in SessionStore)
+    private val _interrupted = MutableStateFlow<InterruptedJob?>(null)
+    /** A job that was running when Android ended the app, or null. */
+    val interrupted: StateFlow<InterruptedJob?> = _interrupted
+
+    data class InterruptedJob(val info: SessionStore.Interrupted, val reason: String)
+
+    init {
+        val ctx = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            val readable = ctx.contentResolver.persistedUriPermissions.filter { it.isReadPermission }.map { it.uri }.toSet()
+            fun keep(t: InputTrack) = t.uri in readable || t.uri.scheme == "file"
+            if (_inputs.value.isEmpty()) _inputs.value = SessionStore.loadInputs(ctx).filter(::keep)
+            if (_templates.value.isEmpty()) _templates.value = SessionStore.loadTemplates(ctx).filter(::keep)
+            val i = SessionStore.interrupted(ctx)
+            if (i != null && !JobRepository.state.value.running && JobRepository.pending == null) {
+                val exit = SystemProbe.exitInfos(ctx, 1).firstOrNull()
+                    ?.takeIf { it.timestamp >= i.startedAt }?.let { SystemProbe.exitReasonName(it.reason) }
+                _interrupted.value = InterruptedJob(i, exit ?: "")
+            }
+        }
+    }
+
+    private fun saveLists() {
+        val ctx = getApplication<Application>()
+        val ins = _inputs.value
+        val tpl = _templates.value
+        viewModelScope.launch(Dispatchers.IO) { SessionStore.saveLists(ctx, ins, tpl) }
+    }
+
+    /** Starts the interrupted job again with the same tracks and settings; finished passes are reused (checkpoints). */
+    fun resumeInterrupted() {
+        val i = _interrupted.value ?: return
+        _interrupted.value = null
+        _inputs.value = i.info.request.inputs
+        _templates.value = i.info.request.templates
+        saveLists()
+        Diagnostics.event("USER", "resumes the interrupted job started ${SystemProbe.fmtTime(i.info.startedAt)}")
+        JobRepository.pending = i.info.request
+        GenerationService.start(getApplication())
+    }
+
+    fun discardInterrupted() {
+        _interrupted.value = null
+        viewModelScope.launch(Dispatchers.IO) { SessionStore.markEnded(getApplication()) }
+    }
+
+    // ---------- diagnostics
+    private val _dumpMessage = MutableStateFlow<String?>(null)
+    val dumpMessage: StateFlow<String?> = _dumpMessage
+
+    /** Manual dump; with dumps switched off it still writes an extended one, since the user asked for it. */
+    fun dumpNow() {
+        val ctx = getApplication<Application>()
+        val type = settings.value.dumpType
+        _dumpMessage.value = ctx.getString(R.string.dump_running)
+        StateDump.requestAsync(ctx, "manual", "requested by the user",
+            forceLevel = if (type == DumpType.NONE) DumpType.EXTENDED else StateDump.levelFor(type, "manual")) { where ->
+            _dumpMessage.value = ctx.getString(R.string.dump_done, where)
+        }
+    }
+
+    fun clearDumpMessage() { _dumpMessage.value = null }
+
+    fun setDiagFolder(folder: DiagFolder, uri: Uri) {
+        val ctx = getApplication<Application>()
+        runCatching { ResultExporter.takePermission(ctx, uri) }.onFailure { return }
+        val old = settings.value.outputFolders
+        store.update { s -> s.copy(outputFolders = s.outputFolders + (folder.key to uri.toString())) }
+        releaseUnused(old)
+        if (folder == DiagFolder.LOGS) Diagnostics.syncNow()
+    }
+
+    fun resetDiagFolder(folder: DiagFolder) {
+        val old = settings.value.outputFolders
+        store.update { s -> s.copy(outputFolders = s.outputFolders - folder.key) }
+        releaseUnused(old)
+    }
+
+    fun diagFolderDescription(folder: DiagFolder): String =
+        DiagExport.describe(getApplication(), settings.value.outputFolders, folder)
+
+    fun setDiagLogs(on: Boolean) {
+        store.update { it.copy(diagLogs = on) }
+        Diagnostics.event("SETTINGS", "saving logs to the folder ${if (on) "ON" else "off"}")
+        if (on) Diagnostics.syncNow()
+    }
+
     private fun describe(uri: Uri): InputTrack {
         val ctx = getApplication<Application>()
         // keep read access across app restarts (Storage Access Framework), no storage permission needed
@@ -66,15 +161,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun addInputs(uris: List<Uri>) = viewModelScope.launch(Dispatchers.IO) {
         val added = uris.map { describe(it) }
         _inputs.value = (_inputs.value + added).distinctBy { it.uri }
+        saveLists()
     }
 
     fun addTemplates(uris: List<Uri>) = viewModelScope.launch(Dispatchers.IO) {
         val added = uris.map { describe(it) }
         _templates.value = (_templates.value + added).distinctBy { it.uri }.take(10)
+        saveLists()
     }
 
-    fun clearInputs() { _inputs.value = emptyList() }
-    fun clearTemplates() { _templates.value = emptyList() }
+    fun clearInputs() { _inputs.value = emptyList(); saveLists() }
+    fun clearTemplates() { _templates.value = emptyList(); saveLists() }
 
     /** Step 1 of Start: compute downloads, storage, RAM and heat information for the warning dialog. */
     fun prepareStart() {
@@ -99,6 +196,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Step 2 of Start: the user confirmed the dialog. */
     fun confirmStart(report: PreflightReport) {
         _preflight.value = null
+        _interrupted.value = null
         JobRepository.pending = JobRequest(_inputs.value, _templates.value, settings.value, report.downloadBytes)
         GenerationService.start(getApplication())
     }

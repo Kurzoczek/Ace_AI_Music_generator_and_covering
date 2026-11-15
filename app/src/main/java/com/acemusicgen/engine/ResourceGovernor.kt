@@ -40,12 +40,22 @@ class ResourceGovernor(
         private const val SIGCONT = 18
         private const val SIGSTOP = 19
         private const val PERIOD_MS = 200L
+
+        /** The governor of the running job (for diagnostics), or null. */
+        @Volatile var current: ResourceGovernor? = null
+            private set
+
+        /** Engine processes of the running job: pid -> stage. */
+        fun activePids(): Map<Int, String> = current?.pids?.toMap() ?: emptyMap()
     }
+
+    private var thermalPausedAt = 0L
 
     fun register(pid: Int, stage: String) { pids[pid] = stage }
     fun unregister(pid: Int) { pids.remove(pid) }
 
     fun start() {
+        current = this
         if (settings.thermalProtection) {
             power.addThermalStatusListener(context.mainExecutor, thermalListener)
             evaluateThermal(power.currentThermalStatus)
@@ -81,10 +91,20 @@ class ResourceGovernor(
             (headroom.isNaN() || headroom < 0.85f)
         if (!thermalPaused && hot) {
             thermalPaused = true
+            thermalPausedAt = System.currentTimeMillis()
             signalAll(SIGSTOP)
+            val why = "status ${com.acemusicgen.diag.SystemProbe.thermalStatusName(status)} (pause level ${settings.thermalPauseLevel}), " +
+                "headroom ${if (headroom.isNaN()) "n/a" else "%.2f".format(java.util.Locale.US, headroom)} (pause at >= 1.00)"
+            com.acemusicgen.diag.Diagnostics.event("GOVERNOR", "overheating protection PAUSED the engine: $why")
+            com.acemusicgen.diag.Diagnostics.snapshot("overheating pause")
+            com.acemusicgen.diag.Diagnostics.pauseEvent("overheating pause: $why")
             onThermalChange(true, status)
         } else if (thermalPaused && cool) {
             thermalPaused = false
+            com.acemusicgen.diag.Diagnostics.event("GOVERNOR", "cooled down - engine RESUMED after " +
+                com.acemusicgen.diag.Diagnostics.duration(System.currentTimeMillis() - thermalPausedAt) +
+                " (status ${com.acemusicgen.diag.SystemProbe.thermalStatusName(status)}, headroom " +
+                "${if (headroom.isNaN()) "n/a" else "%.2f".format(java.util.Locale.US, headroom)})")
             onThermalChange(false, status)
         }
     }
@@ -94,6 +114,7 @@ class ResourceGovernor(
     }
 
     fun stop() {
+        if (current === this) current = null
         loop?.cancel()
         signalAll(SIGCONT)
         if (settings.thermalProtection) runCatching { power.removeThermalStatusListener(thermalListener) }

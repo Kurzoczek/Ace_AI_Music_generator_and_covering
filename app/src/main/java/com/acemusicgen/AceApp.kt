@@ -16,6 +16,7 @@ class AceApp : Application() {
     override fun onCreate() {
         super.onCreate()
         settings = SettingsStore(this)
+        com.acemusicgen.diag.Diagnostics.init(this)
         val nm = getSystemService(NotificationManager::class.java)!!
         nm.createNotificationChannel(NotificationChannel(CHANNEL_PROGRESS, getString(R.string.channel_progress), NotificationManager.IMPORTANCE_LOW))
         nm.createNotificationChannel(NotificationChannel(CHANNEL_DONE, getString(R.string.channel_done), NotificationManager.IMPORTANCE_DEFAULT))

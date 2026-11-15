@@ -111,12 +111,14 @@ fun GenerateScreen(vm: MainViewModel) {
     val checking by vm.checking.collectAsState()
     val preflight by vm.preflight.collectAsState()
     var showReport by rememberSaveable { mutableStateOf(false) }
+    val interrupted by vm.interrupted.collectAsState()
     // System file picker (Storage Access Framework): no storage permission, the user chooses exactly which files
     val pickTracks = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { vm.addInputs(it) }
     val pickTemplates = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { vm.addTemplates(it) }
     val audioTypes = arrayOf("audio/*")
 
     Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp)) {
+        if (!job.running) interrupted?.let { InterruptedCard(vm, it) }
         SectionCard(stringResource(R.string.tracks_title)) {
             if (inputs.isEmpty()) Text(stringResource(R.string.tracks_none), style = MaterialTheme.typography.bodySmall)
             inputs.forEach { t ->
@@ -182,8 +184,9 @@ fun GenerateScreen(vm: MainViewModel) {
                 Text(stringResource(R.string.start))
             }
             if (inputs.isEmpty()) Text(stringResource(R.string.need_track), style = MaterialTheme.typography.bodySmall)
-            Text(if (s.outputFolders.isEmpty()) stringResource(R.string.out_where_default)
-                 else stringResource(R.string.out_where_custom, s.outputFolders.size),
+            val customOut = s.outputFolders.keys.count { k -> OutputCategory.entries.any { it.key == k } }
+            Text(if (customOut == 0) stringResource(R.string.out_where_default)
+                 else stringResource(R.string.out_where_custom, customOut),
                 style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
         }
     }
@@ -218,6 +221,7 @@ fun SettingsScreen(vm: MainViewModel) {
             ChoiceRow(stringResource(R.string.set_dit), ModelCatalog.DIT_MODELS.map { it to it.removePrefix("acestep-v15-") }, s.model) { m -> vm.update { it.copy(model = m) } }
             ChoiceRow(stringResource(R.string.set_quant), ModelCatalog.QUANTS.map { it to it }, s.quant) { q -> vm.update { it.copy(quant = q) } }
             ChoiceRow(stringResource(R.string.set_lm), ModelCatalog.LMS.map { it to (it.ifEmpty { stringResource(R.string.set_lm_none) }) }, s.lm) { l -> vm.update { it.copy(lm = l) } }
+            ModelDescriptions(s)
         }
 
         SectionCard(stringResource(R.string.set_memory)) {
@@ -328,6 +332,8 @@ fun SettingsScreen(vm: MainViewModel) {
         SectionCard(stringResource(R.string.set_network)) {
             SwitchRow(stringResource(R.string.set_wifi_only), s.wifiOnly) { v -> vm.update { it.copy(wifiOnly = v) } }
         }
+
+        DiagnosticsCard(vm, s)
     }
 }
 
@@ -463,10 +469,25 @@ private fun locationLabel(loc: ModelLocation): String = when (loc.place) {
 @Composable
 fun LogScreen(vm: MainViewModel) {
     val job by vm.job.collectAsState()
+    val s by vm.settings.collectAsState()
+    val dumpMessage by vm.dumpMessage.collectAsState()
     val state = rememberLazyListState()
     LaunchedEffect(job.log.size) { if (job.log.isNotEmpty()) state.scrollToItem(job.log.size - 1) }
-    LazyColumn(Modifier.fillMaxSize().padding(8.dp), state = state) {
-        items(job.log) { line -> Text(line, fontFamily = FontFamily.Monospace, fontSize = 11.sp) }
+    Column(Modifier.fillMaxSize().padding(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = vm::dumpNow) { Text(stringResource(R.string.dump_now)) }
+            Text(stringResource(if (s.diagLogs) R.string.log_saving_on else R.string.log_saving_off),
+                style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+        }
+        dumpMessage?.let { msg ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(msg, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                TextButton(onClick = vm::clearDumpMessage) { Text(stringResource(R.string.ok)) }
+            }
+        }
+        LazyColumn(Modifier.fillMaxSize(), state = state) {
+            items(job.log) { line -> Text(line, fontFamily = FontFamily.Monospace, fontSize = 11.sp) }
+        }
     }
 }
 
@@ -511,7 +532,7 @@ fun SaveLocationsCard(vm: MainViewModel, s: AppSettings) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { picking = OutputCategory.entries.toList(); pickFolder.launch(null) }) { Text(stringResource(R.string.out_all)) }
-            if (s.outputFolders.isNotEmpty()) TextButton(onClick = { vm.resetOutputFolder(OutputCategory.entries.toList()) }) {
+            if (OutputCategory.entries.any { it.key in s.outputFolders }) TextButton(onClick = { vm.resetOutputFolder(OutputCategory.entries.toList()) }) {
                 Text(stringResource(R.string.out_all_reset))
             }
         }

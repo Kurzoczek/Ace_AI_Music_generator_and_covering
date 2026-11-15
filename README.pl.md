@@ -126,6 +126,19 @@ Zanim ruszy cokolwiek ciężkiego, aplikacja uczciwie mówi:
 > 🤓 *Czemu nie dowolny folder?* Silnik C++ czyta modele bezpośrednio jako pliki, a bez uprawnienia „dostęp do
 > wszystkich plików” (którego Sklep Play prawie nikomu nie daje) Android pozwala na to tylko we własnych folderach aplikacji.
 
+### 🩺 Diagnostyka (na wypadek kłopotów)
+
+* 📝 **Pliki dziennika** (Ustawienia → Diagnostyka): wszystko z zakładki Log z dokładnym czasem, a do tego początek,
+  koniec i czas trwania każdego zadania i pliku, błędy, zdarzenia systemowe (ekran, ładowarka, oszczędzanie baterii,
+  uśpienie, przegrzanie, ostrzeżenia o pamięci, zamknięcie aplikacji), procesy silnika z przyczyną zakończenia, a **co
+  10 minut** temperatury, taktowanie procesora, pamięć i stan zasilania. Zapis do `Download/ACE_music_gen/logi aplikacji`
+  albo wybranego folderu.
+* 🧯 **Zrzuty stanu jak w Windowsie**: (brak) / mały / rozszerzony (≈ zrzut jądra) / kompletny (ze stertą Javy `.hprof`) /
+  automatyczny - przy awarii, nieoczekiwanym zamknięciu, błędzie lub pauzie, plus przycisk **Zrzut teraz**. Jeden ZIP na
+  zrzut, w `Download/ACE_music_gen/zrzuty stanu` albo wybranym folderze; zachowuj od 1 (zastępuj) do 20.
+* 🔁 **Nic nie ginie, gdy Android zamknie aplikację**: wybrane utwory są pamiętane, a przerwane zadanie pokazuje kartę
+  **Wznów** (z powodem podanym przez Androida), która kontynuuje od ostatniego ukończonego przebiegu.
+
 ### 🌍 I wisienki na torcie 🍒
 
 * 🇬🇧🇵🇱 **Interfejs po angielsku i po polsku**, do zmiany w Ustawienia → Język (na Androidzie 13+ także w ustawieniach aplikacji w telefonie).

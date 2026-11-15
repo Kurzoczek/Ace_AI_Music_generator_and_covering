@@ -61,7 +61,8 @@ object OutputRouting {
         "wav" -> "audio/x-wav"
         "mid", "midi" -> "audio/midi"
         "json" -> "application/json"
-        "txt" -> "text/plain"
+        "txt", "log" -> "text/plain"
+        "zip" -> "application/zip"
         else -> "application/octet-stream"          // .musicxml, .ly - unknown types would get an extra extension
     }
 }

@@ -32,4 +32,14 @@ class MainActivity : ComponentActivity() {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        com.acemusicgen.diag.Diagnostics.event("UI", "app screen visible")
+    }
+
+    override fun onStop() {
+        com.acemusicgen.diag.Diagnostics.event("UI", "app screen hidden (in the background)")
+        super.onStop()
+    }
 }
