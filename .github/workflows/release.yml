@@ -57,7 +57,7 @@ jobs:
           python3 tools/release_notes.py "${{ steps.v.outputs.version }}" > "$RUNNER_TEMP/notes.md"
           echo "----- release notes -----"; cat "$RUNNER_TEMP/notes.md"
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
